@@ -1,0 +1,15 @@
+{
+  "pattern": "/home/javierrojas/AI Work/Auto XRD Fitting/Data/FeF3/r3c 20.txt",
+  "gsasii_path": "/home/javierrojas/G2/GSASII",
+  "candidates": [
+    {
+      "name": "candidate_1",
+      "instprm": "/home/javierrojas/AI Work/Auto XRD Fitting/Data/FeF3/ws2.cu.prm",
+      "cif": [
+        "/home/javierrojas/AI Work/Auto XRD Fitting/Data/FeF3/results_20260828_152406/refined_phase_0_fef3_r3c_ambient.cif",
+        "/home/javierrojas/AI Work/Auto XRD Fitting/Data/FeF3/results_20260828_164803/refined_phase_0_refined_phase_0_refined_phase_0_fef3_r3c_ambient.cif",
+        "/home/javierrojas/AI Work/Auto XRD Fitting/Data/FeF3/results_20260828_164752/refined_phase_0_refined_phase_0_refined_phase_0_fef3_r3c_ambient.cif"
+      ]
+    }
+  ]
+}

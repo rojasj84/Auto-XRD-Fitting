@@ -1,0 +1,334 @@
+4 values read from /home/javierrojas/.GSASII/config.ini
+GSAS-II binary directory: /home/javierrojas/.GSASII/bin
+Refinement plan
+----------------
+  pattern : Data/FeF3/r3c 20.txt
+  instprm : Data/FeF3/ws2.cu.prm
+  phase   : Data/FeF3/fef3_r3c_ambient.cif
+  outdir  : results/FeF3_v14
+  bounds  : max_cell_drift=15%
+  stages  :
+    1. background_scale
+    2. sample_displacement
+    3. unit_cell
+    4. profile_instrument
+    5. peak_asymmetry (optional)
+    6. profile_microstrain_size
+    7. extinction (optional)
+    8. preferred_orientation (optional)
+/home/javierrojas/AI Work/Auto XRD Fitting/Data/FeF3/r3c 20.txt read by Reader Rigaku .txt exported
+Instrument parameters read: /home/javierrojas/AI Work/Auto XRD Fitting/Data/FeF3/ws2.cu.prm bank 1
+Unable to find site multiplicities in CIF. No multiplicity cross check.
+/home/javierrojas/AI Work/Auto XRD Fitting/Data/FeF3/fef3_r3c_ambient.cif read by Reader CIF
+gpx file saved as /home/javierrojas/AI Work/Auto XRD Fitting/results/FeF3_v14/run.gpx
+gpx file saved as /home/javierrojas/AI Work/Auto XRD Fitting/results/FeF3_v14/run.gpx
+ Hessian Levenberg-Marquardt SVD refinement on 0 variables:
+initial chi^2 1.2533e+08 with 7501 obs.
+Read from file: /home/javierrojas/AI Work/Auto XRD Fitting/results/FeF3_v14/run.bak0.gpx
+Save to file: /home/javierrojas/AI Work/Auto XRD Fitting/results/FeF3_v14/run.gpx
+GPX file save successful
+Refinement results are in file: /home/javierrojas/AI Work/Auto XRD Fitting/results/FeF3_v14/run.lst
+ ***** Refinement successful *****
+Reported from refinement:
+no variables: skipping refinement
+
+  [scale-seed] starting phase Scale(s) rescaled 602x (calculated peak heights were too small relative to the data)
+gpx file saved as /home/javierrojas/AI Work/Auto XRD Fitting/results/FeF3_v14/run.gpx
+gpx file saved as /home/javierrojas/AI Work/Auto XRD Fitting/results/FeF3_v14/checkpoint_01_pre_background_scale.gpx
+gpx file saved as /home/javierrojas/AI Work/Auto XRD Fitting/results/FeF3_v14/run.gpx
+gpx file saved as /home/javierrojas/AI Work/Auto XRD Fitting/results/FeF3_v14/run.gpx
+ Hessian Levenberg-Marquardt SVD refinement on 7 variables:
+initial chi^2 1.1306e+08 with 7501 obs.
+Cycle 0: 0.06s, Chi**2: 8.646e+05 for 7501 obs., Lambda: 0,  Delta: 0.992, SVD=0
+Cycle 1: 0.06s, Chi**2: 8.646e+05 for 7501 obs., Lambda: 0,  Delta: 2.69e-16, SVD=0
+converged
+Maximum shift/esd = 833.468 for all cycles
+Read from file: /home/javierrojas/AI Work/Auto XRD Fitting/results/FeF3_v14/run.bak0.gpx
+Save to file: /home/javierrojas/AI Work/Auto XRD Fitting/results/FeF3_v14/run.gpx
+GPX file save successful
+Refinement results are in file: /home/javierrojas/AI Work/Auto XRD Fitting/results/FeF3_v14/run.lst
+ ***** Refinement successful *****
+  [background_scale] ok (Rwp 99.976 -> 8.304)
+gpx file saved as /home/javierrojas/AI Work/Auto XRD Fitting/results/FeF3_v14/checkpoint_02_pre_sample_displacement.gpx
+gpx file saved as /home/javierrojas/AI Work/Auto XRD Fitting/results/FeF3_v14/run.gpx
+gpx file saved as /home/javierrojas/AI Work/Auto XRD Fitting/results/FeF3_v14/run.gpx
+ Hessian Levenberg-Marquardt SVD refinement on 7 variables:
+initial chi^2 8.646e+05 with 7501 obs.
+Cycle 0: 0.06s, Chi**2: 8.646e+05 for 7501 obs., Lambda: 0,  Delta: 0, SVD=0
+converged
+Maximum shift/esd = 0.000 for all cycles
+Read from file: /home/javierrojas/AI Work/Auto XRD Fitting/results/FeF3_v14/run.bak0.gpx
+Save to file: /home/javierrojas/AI Work/Auto XRD Fitting/results/FeF3_v14/run.gpx
+GPX file save successful
+Refinement results are in file: /home/javierrojas/AI Work/Auto XRD Fitting/results/FeF3_v14/run.lst
+ ***** Refinement successful *****
+  [sample_displacement] ok (Rwp 8.304 -> 8.304)
+gpx file saved as /home/javierrojas/AI Work/Auto XRD Fitting/results/FeF3_v14/checkpoint_03_pre_unit_cell.gpx
+gpx file saved as /home/javierrojas/AI Work/Auto XRD Fitting/results/FeF3_v14/run.gpx
+gpx file saved as /home/javierrojas/AI Work/Auto XRD Fitting/results/FeF3_v14/run.gpx
+ Hessian Levenberg-Marquardt SVD refinement on 9 variables:
+initial chi^2 8.646e+05 with 7501 obs.
+Cycle 0: 0.06s, Chi**2: 7.3119e+05 for 7501 obs., Lambda: 0,  Delta: 0.154, SVD=0
+Cycle 1: 0.06s, Chi**2: 7.0212e+05 for 7501 obs., Lambda: 0,  Delta: 0.0397, SVD=0
+divergence: chi^2 7.049e+05 on 7501 obs. (0 SVD zeros)
+	increasing Marquardt lambda to 1.0e-03
+divergence: chi^2 7.0484e+05 on 7501 obs. (0 SVD zeros)
+	increasing Marquardt lambda to 1.0e-02
+Cycle 2: 0.10s, Chi**2: 7.0478e+05 for 7501 obs., Lambda: 0.01,  Delta: -0.00379, SVD=0
+converged
+Maximum shift/esd = 37.248 for all cycles
+Read from file: /home/javierrojas/AI Work/Auto XRD Fitting/results/FeF3_v14/run.bak0.gpx
+Save to file: /home/javierrojas/AI Work/Auto XRD Fitting/results/FeF3_v14/run.gpx
+GPX file save successful
+Refinement results are in file: /home/javierrojas/AI Work/Auto XRD Fitting/results/FeF3_v14/run.lst
+ ***** Refinement successful *****
+  [unit_cell] ok (Rwp 8.304 -> 7.497)
+gpx file saved as /home/javierrojas/AI Work/Auto XRD Fitting/results/FeF3_v14/checkpoint_04_pre_profile_instrument.gpx
+gpx file saved as /home/javierrojas/AI Work/Auto XRD Fitting/results/FeF3_v14/run.gpx
+gpx file saved as /home/javierrojas/AI Work/Auto XRD Fitting/results/FeF3_v14/run.gpx
+ Hessian Levenberg-Marquardt SVD refinement on 12 variables:
+initial chi^2 7.0478e+05 with 7501 obs.
+divergence: chi^2 9.8082e+05 on 7501 obs. (0 SVD zeros)
+	increasing Marquardt lambda to 1.0e-03
+divergence: chi^2 9.7931e+05 on 7501 obs. (0 SVD zeros)
+	increasing Marquardt lambda to 1.0e-02
+divergence: chi^2 9.8483e+05 on 7501 obs. (0 SVD zeros)
+	increasing Marquardt lambda to 1.0e-01
+Cycle 0: 0.13s, Chi**2: 5.6164e+05 for 7501 obs., Lambda: 0.1,  Delta: 0.203, SVD=0
+Cycle 1: 0.07s, Chi**2: 4.9742e+05 for 7501 obs., Lambda: 0.1,  Delta: 0.114, SVD=0
+Cycle 2: 0.08s, Chi**2: 4.6641e+05 for 7501 obs., Lambda: 0.1,  Delta: 0.0623, SVD=0
+Maximum shift/esd = 22.462 for all cycles
+Note highly correlated parameters:
+ ** :0:V and :0:W (@99.56%)
+Read from file: /home/javierrojas/AI Work/Auto XRD Fitting/results/FeF3_v14/run.bak0.gpx
+Save to file: /home/javierrojas/AI Work/Auto XRD Fitting/results/FeF3_v14/run.gpx
+GPX file save successful
+Refinement results are in file: /home/javierrojas/AI Work/Auto XRD Fitting/results/FeF3_v14/run.lst
+ ***** Refinement successful *****
+Reported from refinement:
+Note highly correlated parameters:
+ ** :0:V and :0:W (@99.56%)
+  [profile_instrument] ok (Rwp 7.497 -> 6.098)
+gpx file saved as /home/javierrojas/AI Work/Auto XRD Fitting/results/FeF3_v14/checkpoint_05_pre_peak_asymmetry.gpx
+gpx file saved as /home/javierrojas/AI Work/Auto XRD Fitting/results/FeF3_v14/run.gpx
+gpx file saved as /home/javierrojas/AI Work/Auto XRD Fitting/results/FeF3_v14/run.gpx
+ Hessian Levenberg-Marquardt SVD refinement on 13 variables:
+initial chi^2 4.6635e+05 with 7501 obs.
+divergence: chi^2 1.0845e+06 on 7501 obs. (0 SVD zeros)
+	increasing Marquardt lambda to 1.0e-03
+divergence: chi^2 1.028e+06 on 7501 obs. (0 SVD zeros)
+	increasing Marquardt lambda to 1.0e-02
+divergence: chi^2 7.3258e+05 on 7501 obs. (0 SVD zeros)
+	increasing Marquardt lambda to 1.0e-01
+divergence: chi^2 4.8012e+05 on 7501 obs. (0 SVD zeros)
+	increasing Marquardt lambda to 1.0e+00
+Cycle 0: 0.22s, Chi**2: 4.6619e+05 for 7501 obs., Lambda: 1,  Delta: 0.000332, SVD=0
+converged
+Maximum shift/esd = 0.234 for all cycles
+Note highly correlated parameters:
+ ** :0:V and :0:W (@99.61%)
+Read from file: /home/javierrojas/AI Work/Auto XRD Fitting/results/FeF3_v14/run.bak0.gpx
+Save to file: /home/javierrojas/AI Work/Auto XRD Fitting/results/FeF3_v14/run.gpx
+GPX file save successful
+Refinement results are in file: /home/javierrojas/AI Work/Auto XRD Fitting/results/FeF3_v14/run.lst
+ ***** Refinement successful *****
+Reported from refinement:
+Note highly correlated parameters:
+ ** :0:V and :0:W (@99.61%)
+  [peak_asymmetry] failed bounds check (Rwp 6.098 -> 6.097) — reverting to checkpoint
+gpx file saved as /home/javierrojas/AI Work/Auto XRD Fitting/results/FeF3_v14/checkpoint_06_pre_profile_microstrain_size.gpx
+gpx file saved as /home/javierrojas/AI Work/Auto XRD Fitting/results/FeF3_v14/run.gpx
+gpx file saved as /home/javierrojas/AI Work/Auto XRD Fitting/results/FeF3_v14/run.gpx
+ Hessian Levenberg-Marquardt SVD refinement on 15 variables:
+initial chi^2 4.6635e+05 with 7501 obs.
+divergence: chi^2 1.156e+06 on 7501 obs. (0 SVD zeros)
+	increasing Marquardt lambda to 1.0e-03
+divergence: chi^2 9.776e+05 on 7501 obs. (0 SVD zeros)
+	increasing Marquardt lambda to 1.0e-02
+divergence: chi^2 6.4451e+05 on 7501 obs. (0 SVD zeros)
+	increasing Marquardt lambda to 1.0e-01
+divergence: chi^2 4.7075e+05 on 7501 obs. (0 SVD zeros)
+	increasing Marquardt lambda to 1.0e+00
+Cycle 0: 0.24s, Chi**2: 4.646e+05 for 7501 obs., Lambda: 1,  Delta: 0.00376, SVD=0
+divergence: chi^2 4.7044e+05 on 7501 obs. (0 SVD zeros)
+	increasing Marquardt lambda to 1.0e+00
+Cycle 1: 0.13s, Chi**2: 4.6308e+05 for 7501 obs., Lambda: 1,  Delta: 0.00326, SVD=0
+divergence: chi^2 4.661e+05 on 7501 obs. (0 SVD zeros)
+	increasing Marquardt lambda to 1.0e+00
+Cycle 2: 0.13s, Chi**2: 4.6142e+05 for 7501 obs., Lambda: 1,  Delta: 0.00358, SVD=0
+Maximum shift/esd = 2.001 for all cycles
+Note highly correlated parameters:
+ ** 0:0:Mustrain;i and 0:0:Size;i (@97.73%)
+ ** :0:V and :0:W (@98.24%)
+Read from file: /home/javierrojas/AI Work/Auto XRD Fitting/results/FeF3_v14/run.bak0.gpx
+Save to file: /home/javierrojas/AI Work/Auto XRD Fitting/results/FeF3_v14/run.gpx
+GPX file save successful
+Refinement results are in file: /home/javierrojas/AI Work/Auto XRD Fitting/results/FeF3_v14/run.lst
+ ***** Refinement successful *****
+Reported from refinement:
+Note highly correlated parameters:
+ ** 0:0:Mustrain;i and 0:0:Size;i (@97.73%)
+ ** :0:V and :0:W (@98.24%)
+  [profile_microstrain_size] ok (Rwp 6.098 -> 6.066)
+gpx file saved as /home/javierrojas/AI Work/Auto XRD Fitting/results/FeF3_v14/checkpoint_07_pre_extinction.gpx
+gpx file saved as /home/javierrojas/AI Work/Auto XRD Fitting/results/FeF3_v14/run.gpx
+gpx file saved as /home/javierrojas/AI Work/Auto XRD Fitting/results/FeF3_v14/run.gpx
+ Hessian Levenberg-Marquardt SVD refinement on 16 variables:
+initial chi^2 4.6143e+05 with 7501 obs.
+divergence: chi^2 1.3083e+08 on 7501 obs. (0 SVD zeros)
+	increasing Marquardt lambda to 1.0e-03
+divergence: chi^2 7.745e+05 on 7501 obs. (0 SVD zeros)
+	increasing Marquardt lambda to 1.0e-02
+divergence: chi^2 9.1986e+05 on 7501 obs. (0 SVD zeros)
+	increasing Marquardt lambda to 1.0e-01
+divergence: chi^2 8.2596e+05 on 7501 obs. (0 SVD zeros)
+	increasing Marquardt lambda to 1.0e+00
+divergence: chi^2 6.276e+05 on 7501 obs. (0 SVD zeros)
+	increasing Marquardt lambda to 1.0e+01
+divergence: chi^2 4.8252e+05 on 7501 obs. (0 SVD zeros)
+	increasing Marquardt lambda to 1.0e+02
+ouch #4 stuck: chisq-new 4.825e+05 > chisq0 4.614e+05 with lambda 1e+02
+Maximum shift/esd = 0.000 for all cycles
+Note highly correlated parameters:
+ ** 0:0:Mustrain;i and 0:0:Size;i (@98.47%)
+ ** :0:V and :0:W (@98.06%)
+Read from file: /home/javierrojas/AI Work/Auto XRD Fitting/results/FeF3_v14/run.bak0.gpx
+Save to file: /home/javierrojas/AI Work/Auto XRD Fitting/results/FeF3_v14/run.gpx
+GPX file save successful
+Refinement results are in file: /home/javierrojas/AI Work/Auto XRD Fitting/results/FeF3_v14/run.lst
+ ***** Refinement successful *****
+Reported from refinement:
+Note highly correlated parameters:
+ ** 0:0:Mustrain;i and 0:0:Size;i (@98.47%)
+ ** :0:V and :0:W (@98.06%)
+  [extinction] failed bounds check (Rwp 6.066 -> 6.203) — reverting to checkpoint
+gpx file saved as /home/javierrojas/AI Work/Auto XRD Fitting/results/FeF3_v14/checkpoint_08_pre_preferred_orientation.gpx
+gpx file saved as /home/javierrojas/AI Work/Auto XRD Fitting/results/FeF3_v14/run.gpx
+gpx file saved as /home/javierrojas/AI Work/Auto XRD Fitting/results/FeF3_v14/run.gpx
+ Hessian Levenberg-Marquardt SVD refinement on 16 variables:
+initial chi^2 4.6143e+05 with 7501 obs.
+divergence: chi^2 8.3241e+07 on 7501 obs. (0 SVD zeros)
+	increasing Marquardt lambda to 1.0e-03
+divergence: chi^2 1.1955e+06 on 7501 obs. (0 SVD zeros)
+	increasing Marquardt lambda to 1.0e-02
+divergence: chi^2 6.0341e+05 on 7501 obs. (0 SVD zeros)
+	increasing Marquardt lambda to 1.0e-01
+Cycle 0: 0.21s, Chi**2: 4.6386e+05 for 7501 obs., Lambda: 0.1,  Delta: -0.00527, SVD=0
+converged
+Maximum shift/esd = 4.229 for all cycles
+Note highly correlated parameters:
+ ** 0:0:Mustrain;i and 0:0:Size;i (@97.70%)
+ ** :0:V and :0:W (@98.07%)
+Read from file: /home/javierrojas/AI Work/Auto XRD Fitting/results/FeF3_v14/run.bak0.gpx
+Save to file: /home/javierrojas/AI Work/Auto XRD Fitting/results/FeF3_v14/run.gpx
+GPX file save successful
+Refinement results are in file: /home/javierrojas/AI Work/Auto XRD Fitting/results/FeF3_v14/run.lst
+ ***** Refinement successful *****
+Reported from refinement:
+Note highly correlated parameters:
+ ** 0:0:Mustrain;i and 0:0:Size;i (@97.70%)
+ ** :0:V and :0:W (@98.07%)
+gpx file saved as /home/javierrojas/AI Work/Auto XRD Fitting/results/FeF3_v14/run.gpx
+gpx file saved as /home/javierrojas/AI Work/Auto XRD Fitting/results/FeF3_v14/run.gpx
+ Hessian Levenberg-Marquardt SVD refinement on 16 variables:
+initial chi^2 4.6143e+05 with 7501 obs.
+divergence: chi^2 8.377e+07 on 7501 obs. (0 SVD zeros)
+	increasing Marquardt lambda to 1.0e-03
+divergence: chi^2 1.1932e+06 on 7501 obs. (0 SVD zeros)
+	increasing Marquardt lambda to 1.0e-02
+divergence: chi^2 6.0368e+05 on 7501 obs. (0 SVD zeros)
+	increasing Marquardt lambda to 1.0e-01
+Cycle 0: 0.22s, Chi**2: 4.6395e+05 for 7501 obs., Lambda: 0.1,  Delta: -0.00547, SVD=0
+converged
+Maximum shift/esd = 4.228 for all cycles
+Note highly correlated parameters:
+ ** 0:0:Mustrain;i and 0:0:Size;i (@97.70%)
+ ** :0:V and :0:W (@98.07%)
+Read from file: /home/javierrojas/AI Work/Auto XRD Fitting/results/FeF3_v14/run.bak0.gpx
+Save to file: /home/javierrojas/AI Work/Auto XRD Fitting/results/FeF3_v14/run.gpx
+GPX file save successful
+Refinement results are in file: /home/javierrojas/AI Work/Auto XRD Fitting/results/FeF3_v14/run.lst
+ ***** Refinement successful *****
+Reported from refinement:
+Note highly correlated parameters:
+ ** 0:0:Mustrain;i and 0:0:Size;i (@97.70%)
+ ** :0:V and :0:W (@98.07%)
+gpx file saved as /home/javierrojas/AI Work/Auto XRD Fitting/results/FeF3_v14/run.gpx
+gpx file saved as /home/javierrojas/AI Work/Auto XRD Fitting/results/FeF3_v14/run.gpx
+ Hessian Levenberg-Marquardt SVD refinement on 16 variables:
+initial chi^2 4.6143e+05 with 7501 obs.
+divergence: chi^2 8.377e+07 on 7501 obs. (0 SVD zeros)
+	increasing Marquardt lambda to 1.0e-03
+divergence: chi^2 1.1932e+06 on 7501 obs. (0 SVD zeros)
+	increasing Marquardt lambda to 1.0e-02
+divergence: chi^2 6.0368e+05 on 7501 obs. (0 SVD zeros)
+	increasing Marquardt lambda to 1.0e-01
+Cycle 0: 0.21s, Chi**2: 4.6395e+05 for 7501 obs., Lambda: 0.1,  Delta: -0.00547, SVD=0
+converged
+Maximum shift/esd = 4.228 for all cycles
+Note highly correlated parameters:
+ ** 0:0:Mustrain;i and 0:0:Size;i (@97.70%)
+ ** :0:V and :0:W (@98.07%)
+Read from file: /home/javierrojas/AI Work/Auto XRD Fitting/results/FeF3_v14/run.bak0.gpx
+Save to file: /home/javierrojas/AI Work/Auto XRD Fitting/results/FeF3_v14/run.gpx
+GPX file save successful
+Refinement results are in file: /home/javierrojas/AI Work/Auto XRD Fitting/results/FeF3_v14/run.lst
+ ***** Refinement successful *****
+Reported from refinement:
+Note highly correlated parameters:
+ ** 0:0:Mustrain;i and 0:0:Size;i (@97.70%)
+ ** :0:V and :0:W (@98.07%)
+gpx file saved as /home/javierrojas/AI Work/Auto XRD Fitting/results/FeF3_v14/run.gpx
+gpx file saved as /home/javierrojas/AI Work/Auto XRD Fitting/results/FeF3_v14/run.gpx
+ Hessian Levenberg-Marquardt SVD refinement on 16 variables:
+initial chi^2 4.6143e+05 with 7501 obs.
+divergence: chi^2 8.534e+07 on 7501 obs. (0 SVD zeros)
+	increasing Marquardt lambda to 1.0e-03
+divergence: chi^2 1.1933e+06 on 7501 obs. (0 SVD zeros)
+	increasing Marquardt lambda to 1.0e-02
+divergence: chi^2 6.035e+05 on 7501 obs. (0 SVD zeros)
+	increasing Marquardt lambda to 1.0e-01
+Cycle 0: 0.21s, Chi**2: 4.6385e+05 for 7501 obs., Lambda: 0.1,  Delta: -0.00524, SVD=0
+converged
+Maximum shift/esd = 4.229 for all cycles
+Note highly correlated parameters:
+ ** 0:0:Mustrain;i and 0:0:Size;i (@97.70%)
+ ** :0:V and :0:W (@98.07%)
+Read from file: /home/javierrojas/AI Work/Auto XRD Fitting/results/FeF3_v14/run.bak0.gpx
+Save to file: /home/javierrojas/AI Work/Auto XRD Fitting/results/FeF3_v14/run.gpx
+GPX file save successful
+Refinement results are in file: /home/javierrojas/AI Work/Auto XRD Fitting/results/FeF3_v14/run.lst
+ ***** Refinement successful *****
+Reported from refinement:
+Note highly correlated parameters:
+ ** 0:0:Mustrain;i and 0:0:Size;i (@97.70%)
+ ** :0:V and :0:W (@98.07%)
+gpx file saved as /home/javierrojas/AI Work/Auto XRD Fitting/results/FeF3_v14/run.gpx
+gpx file saved as /home/javierrojas/AI Work/Auto XRD Fitting/results/FeF3_v14/run.gpx
+ Hessian Levenberg-Marquardt SVD refinement on 16 variables:
+initial chi^2 4.6143e+05 with 7501 obs.
+divergence: chi^2 8.5801e+07 on 7501 obs. (0 SVD zeros)
+	increasing Marquardt lambda to 1.0e-03
+divergence: chi^2 1.1945e+06 on 7501 obs. (0 SVD zeros)
+	increasing Marquardt lambda to 1.0e-02
+divergence: chi^2 6.0331e+05 on 7501 obs. (0 SVD zeros)
+	increasing Marquardt lambda to 1.0e-01
+Cycle 0: 0.21s, Chi**2: 4.6373e+05 for 7501 obs., Lambda: 0.1,  Delta: -0.00499, SVD=0
+converged
+Maximum shift/esd = 4.229 for all cycles
+Note highly correlated parameters:
+ ** 0:0:Mustrain;i and 0:0:Size;i (@97.70%)
+ ** :0:V and :0:W (@98.07%)
+Read from file: /home/javierrojas/AI Work/Auto XRD Fitting/results/FeF3_v14/run.bak0.gpx
+Save to file: /home/javierrojas/AI Work/Auto XRD Fitting/results/FeF3_v14/run.gpx
+GPX file save successful
+Refinement results are in file: /home/javierrojas/AI Work/Auto XRD Fitting/results/FeF3_v14/run.lst
+ ***** Refinement successful *****
+Reported from refinement:
+Note highly correlated parameters:
+ ** 0:0:Mustrain;i and 0:0:Size;i (@97.70%)
+ ** :0:V and :0:W (@98.07%)
+  [preferred_orientation (fallback: pref_ori_111)] failed bounds check (Rwp 6.066 -> 6.081) — reverting to checkpoint
+gpx file saved as /home/javierrojas/AI Work/Auto XRD Fitting/results/FeF3_v14/final.gpx
+
+Refinement complete. See summary.json / summary.csv / refined_phase_*.cif in results/FeF3_v14

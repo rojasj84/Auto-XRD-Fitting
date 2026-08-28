@@ -1,0 +1,77 @@
+ 
+######################################################################
+data_final
+
+# phase info for fef3_r3c_ambient follows
+_pd_phase_name  fef3_r3c_ambient
+_cell_length_a  5.16134
+_cell_length_b  5.16134
+_cell_length_c  13.3182
+_cell_angle_alpha  90.0000
+_cell_angle_beta  90.0000
+_cell_angle_gamma  120.000
+_cell_volume  307.257
+_symmetry_cell_setting  trigonal
+_symmetry_space_group_name_H-M  "R -3 c"
+loop_
+    _space_group_symop_id
+    _space_group_symop_operation_xyz
+     1  x,y,z
+     2  -y,x-y,z
+     3  y-x,-x,z
+     4  y-x,y,1/2+z
+     5  -y,-x,1/2+z
+     6  x,x-y,1/2+z
+     7  -x,-y,-z
+     8  y,y-x,-z
+     9  x-y,x,-z
+    10  x-y,-y,1/2-z
+    11  y,x,1/2-z
+    12  -x,y-x,1/2-z
+    13  2/3+x,1/3+y,1/3+z
+    14  2/3-y,1/3+x-y,1/3+z
+    15  2/3+y-x,1/3-x,1/3+z
+    16  2/3+y-x,1/3+y,5/6+z
+    17  2/3-y,1/3-x,5/6+z
+    18  2/3+x,1/3+x-y,5/6+z
+    19  2/3-x,1/3-y,1/3-z
+    20  2/3+y,1/3+y-x,1/3-z
+    21  2/3+x-y,1/3+x,1/3-z
+    22  2/3+x-y,1/3-y,5/6-z
+    23  2/3+y,1/3+x,5/6-z
+    24  2/3-x,1/3+y-x,5/6-z
+    25  1/3+x,2/3+y,2/3+z
+    26  1/3-y,2/3+x-y,2/3+z
+    27  1/3+y-x,2/3-x,2/3+z
+    28  1/3+y-x,2/3+y,1/6+z
+    29  1/3-y,2/3-x,1/6+z
+    30  1/3+x,2/3+x-y,1/6+z
+    31  1/3-x,2/3-y,2/3-z
+    32  1/3+y,2/3+y-x,2/3-z
+    33  1/3+x-y,2/3+x,2/3-z
+    34  1/3+x-y,2/3-y,1/6-z
+    35  1/3+y,2/3+x,1/6-z
+    36  1/3-x,2/3+y-x,1/6-z
+
+# ATOMIC COORDINATES AND DISPLACEMENT PARAMETERS
+loop_ 
+   _atom_site_label
+   _atom_site_type_symbol
+   _atom_site_fract_x
+   _atom_site_fract_y
+   _atom_site_fract_z
+   _atom_site_occupancy
+   _atom_site_adp_type
+   _atom_site_U_iso_or_equiv
+   _atom_site_site_symmetry_multiplicity
+Fe1    Fe   0.00000     0.00000     0.00000     1.0000     Uiso 0.0024     6   
+F1     F    0.34410     0.00000     0.75000     1.0000     Uiso 0.0038     18  
+
+loop_  _atom_type_symbol _atom_type_number_in_cell
+  F       18
+  Fe      6
+
+# Note that Z affects _cell_formula_sum and _weight
+_cell_formula_units_Z  6
+_chemical_formula_sum  "F3 Fe"
+_chemical_formula_weight  112.84

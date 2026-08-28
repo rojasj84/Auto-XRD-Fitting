@@ -1,0 +1,177 @@
+********************************************************************************
+   General Structure Analysis System-II Crystal Structure Refinement
+              by Robert B. Von Dreele & Brian H. Toby
+                Argonne National Laboratory(C), 2010
+ This product includes software developed by the UChicago Argonne, LLC,
+            as Operator of Argonne National Laboratory.
+                          Please cite:
+   B.H. Toby & R.B. Von Dreele, J. Appl. Cryst. 46, 544-549 (2013)
+********************************************************************************
+ Least squares controls:
+ Refinement type: analytic Hessian
+ Maximum number of cycles: 3
+ Regularize hydrogens (if any): False
+ Initial shift factor: 1.000
+
+ Phases:
+
+ Phase name: fef3 r3c
+=======================================================================================================================================
+
+ X-ray scattering factors:
+   Symbol     fa                                      fb                                      fc
+---------------------------------------------------------------------------------------------------
+ Fe        11.76950   7.35730   3.52220   2.30450   4.76110   0.30720  15.35350  76.88050   1.03690
+ F          3.53920   2.64120   1.51700   1.02430  10.28250   4.29440   0.26150  26.14760   0.27760
+
+ Electron scattering factors:
+   Symbol     fa                                                fb
+---------------------------------------------------------------------------------------------------
+ Fe         0.19290   0.82390   1.86890   2.36940   1.90600   0.10870   1.08060   4.76370  22.85000  76.73090
+ F          0.03820   0.18220   0.59720   0.77070   0.21300   0.06130   0.57530   2.68580   8.82140  25.66680
+
+ Neutron scattering factors:
+   Symbol   isotope       mass       b       resonant terms
+---------------------------------------------------------------------------------------------------
+ Fe      Nat. Abund.     55.847    0.945
+ F       Nat. Abund.     18.998    0.565
+
+ Space Group: P 1
+ The lattice is noncentrosymmetric primitive triclinic
+ The Laue symmetry is -1
+ The lattice point group is 1
+ Multiplicity of a general site is 1
+ The location of the origin is arbitrary in xyz
+ 
+ The equivalent positions are:
+
+ ( 1)     X,     Y,     Z 
+
+ Atoms:
+   name    type  refine?   x         y         z      frac site sym  mult I/A   Uiso     U11     U22     U33     U12     U13     U23
+---------------------------------------------------------------------------------------------------------------------------------------
+    Fe1     Fe          0.00000  -0.00000   0.00000   1.000      1    1    I 0.01267                                                
+    Fe2     Fe          0.50000   0.50000   0.50000   1.000      1    1    I 0.01267                                                
+     F1      F          0.31620   0.18379   0.75000   1.000      1    1    I 0.01267                                                
+     F2      F          0.68380   0.81620   0.25000   1.000      1    1    I 0.01267                                                
+     F3      F          0.75000   0.31621   0.18380   1.000      1    1    I 0.01267                                                
+     F4      F          0.25000   0.68380   0.81620   1.000      1    1    I 0.01267                                                
+     F5      F          0.18379   0.75000   0.31621   1.000      1    1    I 0.01267                                                
+     F6      F          0.81621   0.25000   0.68379   1.000      1    1    I 0.01267                                                
+
+ Unit cell: a = 5.46682 b = 5.46660 c = 5.46663 alpha = 58.931 beta = 58.927 gamma = 58.928 volume = 112.696 Refine? False
+
+ Phase: fef3 r3c in histogram: PWDR r3c 20.txt
+=======================================================================================================================================
+ Phase fraction  :     0.1231 Refine? True
+ Extinction coeff:     0.0000 Refine? False
+ March-Dollase PO:     1.0000 Refine? False Axis: 0 0 1
+
+ Size model    : isotropic equatorial:       1.000 Refine? True
+	 LG mixing coeff.:       1.0000 Refine? False
+
+ Mustrain model:  uniaxial equatorial:      1000.0 Refine? True axial:      1000.0 Refine? True
+	 LG mixing coeff.:      1.0000 Refine? False
+
+ Hydrostatic/elastic strain:
+ names :         D11         D22         D33         D12         D13         D23
+ values:           0           0           0           0           0           0
+ refine:       False       False       False       False       False       False
+
+ Histogram: PWDR r3c 20.txt histogram Id: 0
+=======================================================================================================================================
+ Instrument type: Debye-Scherrer
+ Histogram limits:     5.00 deg to    80.00 deg
+
+ Sample Parameters:
+ Goniometer omega = 0.00, chi = 0.00, phi = 0.00
+ name  :         Scale    Absorption     DisplaceX     DisplaceY
+ value :        1.0000        0.0000      134.1867        0.0000
+ refine:         False         False          True         False
+
+ Instrument Parameters:
+ name  :     Azimuth         Lam    Polariz.        SH/L           U           V           W           X           Y
+ value :    0.000000    0.334400    0.911000    0.002000    0.000000    0.000000  200.000000    0.000000    0.000000
+ refine:                   False       False       False       False       False       False       False       False
+
+ name  :           Z        Zero
+ value :    0.000000    0.000000
+ refine:       False       False
+
+ Background function: chebyschev-1 Refine? True
+ Coefficients:  15724.127  2755.890 -2203.878  1740.419 -1035.581   669.682
+ Fixed background file: ; mult: 1.000  Refine? False
+
+ Refinement results:
+---------------------------------------------------------------------------------------------------------------------------------------
+ Number of function calls: 3 No. of observations: 7501 No. of parameters: 11 User rejected: 0 Sp. gp. extinct: 0
+ Refinement time =   25.778s,   25.778s/cycle, for 1 cycles
+ wR =   10.61%, chi**2 =  1.41225e+06, GOF =  13.73
+
+ Phases:
+ Result for phase: fef3 r3c
+=======================================================================================================================================
+
+ Atoms:
+   name      x         y         z      frac   Uiso     U11     U22     U33     U12     U13     U23
+---------------------------------------------------------------------------------------------------------------------------------------
+    Fe1     Fe:
+ values:   0.00000  -0.00000   0.00000   1.000 0.01267
+ sig   :                                               
+    Fe2     Fe:
+ values:   0.50000   0.50000   0.50000   1.000 0.01267
+ sig   :                                               
+     F1      F:
+ values:   0.31620   0.18379   0.75000   1.000 0.01267
+ sig   :                                               
+     F2      F:
+ values:   0.68380   0.81620   0.25000   1.000 0.01267
+ sig   :                                               
+     F3      F:
+ values:   0.75000   0.31621   0.18380   1.000 0.01267
+ sig   :                                               
+     F4      F:
+ values:   0.25000   0.68380   0.81620   1.000 0.01267
+ sig   :                                               
+     F5      F:
+ values:   0.18379   0.75000   0.31621   1.000 0.01267
+ sig   :                                               
+     F6      F:
+ values:   0.81621   0.25000   0.68379   1.000 0.01267
+ sig   :                                               
+
+ Density: 3.3254 g/cm**3
+
+ Phase: fef3 r3c in histogram: PWDR r3c 20.txt
+=======================================================================================================================================
+ Final refinement RF, RF^2 = 96.00%, 99.56% on 13376 reflections
+ Durbin-Watson statistic = 0.216
+ Bragg intensity sum = 3.26e+04
+ Phase fraction  :    0.31419, sig    0.99861 Weight fraction  :  0.00000, sig    0.00000
+
+ Size model:     isotropic equatorial:    10.00000, sig:2694.3352 LG mix coeff.:      1.0000
+
+ Mustrain model:  uniaxial
+ equatorial:    866401.3, sig:2119353.8 axial:   2281724.8, sig:3330272.3 LG mix coeff.:      1.0000
+
+ Histogram: PWDR r3c 20.txt histogram Id: 0
+=======================================================================================================================================
+ PWDR histogram weight factor = 1.000
+ Final refinement wR = 10.61% on 7501 observations in this histogram
+ Other residuals: R = 5.18%, R-bkg = 21.76%, wR-bkg = 10.61% wRmin = 0.77%
+ Instrument type: Debye-Scherrer
+
+ Resonant form factors:(ref: D.T. Cromer & D.A. Liberman (1981), Acta Cryst. A37, 267-268.)
+ Element:       Fe        F
+ f'     :    0.137    0.001
+ f"     :    0.202    0.002
+
+ Sample Parameters:
+ names :         Scale    Absorption     DisplaceX     DisplaceY
+ values:        1.0000        0.0000     -193.4637        0.0000
+ sig   :                                 2905.2770              
+
+ Background function: chebyschev-1
+ value :  1.572e+04      2762     -2208      1743     -1036     669.6
+ sig   :      30.17     50.21     41.19     36.18     32.44     32.93
+ Background sums: empirical 1.24e+08, Debye 0, peaks 0, Total 1.24e+08

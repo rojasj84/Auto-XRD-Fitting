@@ -1,0 +1,126 @@
+N.B. Configuration file /home/javierrojas/.GSASII/config.ini does not exist
+New install: start without a config.py file
+0 values read from /home/javierrojas/.GSASII/config.ini
+GSAS-II binary directory: /home/javierrojas/.GSASII/bin
+Refinement plan
+----------------
+  pattern : Data/FeF3/r3c 20.txt
+  instprm : Data/FeF3/ws2.prm
+  phase   : Data/FeF3/fef3 r3c.fixed.cif
+  outdir  : results/FeF3_debug
+  bounds  : max_cell_drift=15%
+  stages  :
+    1. background_scale
+    2. sample_displacement
+    3. unit_cell
+    4. profile_instrument
+    5. profile_microstrain_size
+/home/javierrojas/AI Work/Auto XRD Fitting/Data/FeF3/r3c 20.txt read by Reader Rigaku .txt exported
+Instrument parameters read: /home/javierrojas/AI Work/Auto XRD Fitting/Data/FeF3/ws2.prm bank 1
+Unable to find site multiplicities in CIF. No multiplicity cross check.
+/home/javierrojas/AI Work/Auto XRD Fitting/Data/FeF3/fef3 r3c.fixed.cif read by Reader CIF
+gpx file saved as /home/javierrojas/AI Work/Auto XRD Fitting/results/FeF3_debug/run.gpx
+gpx file saved as /home/javierrojas/AI Work/Auto XRD Fitting/results/FeF3_debug/run.gpx
+gpx file saved as /home/javierrojas/AI Work/Auto XRD Fitting/results/FeF3_debug/checkpoint_01_pre_background_scale.gpx
+gpx file saved as /home/javierrojas/AI Work/Auto XRD Fitting/results/FeF3_debug/checkpoint_01_pre_background_scale.gpx
+ Hessian Levenberg-Marquardt SVD refinement on 8 variables:
+initial chi^2 1.2519e+08 with 7501 obs.
+Cycle 0: 15.55s, Chi**2: 1.4123e+06 for 7501 obs., Lambda: 0,  Delta: 0.989, SVD=1
+Cycle 1: 15.73s, Chi**2: 1.4123e+06 for 7501 obs., Lambda: 0,  Delta: 3.23e-05, SVD=1
+converged
+Maximum shift/esd = 625.388 for all cycles
+SVD problem(s) likely from:
+  :0:Scale
+Note highly correlated parameters:
+ ** 0:0:Scale and :0:Scale (@100.00%)
+Read from file: /home/javierrojas/AI Work/Auto XRD Fitting/results/FeF3_debug/checkpoint_01_pre_background_scale.bak0.gpx
+Save to file: /home/javierrojas/AI Work/Auto XRD Fitting/results/FeF3_debug/checkpoint_01_pre_background_scale.gpx
+GPX file save successful
+Refinement results are in file: /home/javierrojas/AI Work/Auto XRD Fitting/results/FeF3_debug/checkpoint_01_pre_background_scale.lst
+ ***** Refinement successful *****
+Reported from refinement:
+Warning: Soft (SVD) singularity in the Hessian
+SVD problem(s) likely from:
+:0:Scale
+Note highly correlated parameters:
+ ** 0:0:Scale and :0:Scale (@100.00%)
+  [background_scale] ok (Rwp nan -> 10.613)
+gpx file saved as /home/javierrojas/AI Work/Auto XRD Fitting/results/FeF3_debug/checkpoint_02_pre_sample_displacement.gpx
+gpx file saved as /home/javierrojas/AI Work/Auto XRD Fitting/results/FeF3_debug/checkpoint_02_pre_sample_displacement.gpx
+ Hessian Levenberg-Marquardt SVD refinement on 9 variables:
+initial chi^2 1.4123e+06 with 7501 obs.
+Cycle 0: 16.08s, Chi**2: 1.4123e+06 for 7501 obs., Lambda: 0,  Delta: 3.83e-07, SVD=1
+converged
+Maximum shift/esd = 0.015 for all cycles
+SVD problem(s) likely from:
+  :0:Scale
+Note highly correlated parameters:
+ ** 0:0:Scale and :0:Scale (@100.00%)
+Read from file: /home/javierrojas/AI Work/Auto XRD Fitting/results/FeF3_debug/checkpoint_02_pre_sample_displacement.bak0.gpx
+Save to file: /home/javierrojas/AI Work/Auto XRD Fitting/results/FeF3_debug/checkpoint_02_pre_sample_displacement.gpx
+GPX file save successful
+Refinement results are in file: /home/javierrojas/AI Work/Auto XRD Fitting/results/FeF3_debug/checkpoint_02_pre_sample_displacement.lst
+ ***** Refinement successful *****
+Reported from refinement:
+Warning: Soft (SVD) singularity in the Hessian
+SVD problem(s) likely from:
+:0:Scale
+Note highly correlated parameters:
+ ** 0:0:Scale and :0:Scale (@100.00%)
+  [sample_displacement] ok (Rwp 10.613 -> 10.613)
+gpx file saved as /home/javierrojas/AI Work/Auto XRD Fitting/results/FeF3_debug/checkpoint_03_pre_unit_cell.gpx
+gpx file saved as /home/javierrojas/AI Work/Auto XRD Fitting/results/FeF3_debug/checkpoint_03_pre_unit_cell.gpx
+ Hessian Levenberg-Marquardt SVD refinement on 15 variables:
+initial chi^2 1.4123e+06 with 7501 obs.
+Cycle 0: 14.58s, Chi**2: 1.4124e+06 for 7501 obs., Lambda: 0,  Delta: -0.000112, SVD=4
+converged
+Maximum shift/esd = 0.743 for all cycles
+SVD problem(s) likely from:
+  0::A4, 0::A5, :0:Scale, :0:DisplaceX
+Note highly correlated parameters:
+ ** 0::A1 and 0::A2 (@100.00%)
+ ** 0::A3 and 0::A4 (@100.00%)
+ ** 0:0:Scale and :0:Scale (@100.00%)
+Read from file: /home/javierrojas/AI Work/Auto XRD Fitting/results/FeF3_debug/checkpoint_03_pre_unit_cell.bak0.gpx
+Save to file: /home/javierrojas/AI Work/Auto XRD Fitting/results/FeF3_debug/checkpoint_03_pre_unit_cell.gpx
+GPX file save successful
+Refinement results are in file: /home/javierrojas/AI Work/Auto XRD Fitting/results/FeF3_debug/checkpoint_03_pre_unit_cell.lst
+ ***** Refinement successful *****
+Reported from refinement:
+Warning: 4 soft (SVD) Hessian singularities
+SVD problem(s) likely from:
+0::A4, 0::A5, :0:Scale, :0:DisplaceX
+Note highly correlated parameters:
+ ** 0::A1 and 0::A2 (@100.00%)
+ ** 0::A3 and 0::A4 (@100.00%)
+ ** 0:0:Scale and :0:Scale (@100.00%)
+  [unit_cell] failed bounds check (Rwp 10.613 -> 10.613) — reverting to checkpoint
+gpx file saved as /home/javierrojas/AI Work/Auto XRD Fitting/results/FeF3_debug/checkpoint_04_pre_profile_instrument.gpx
+gpx file saved as /home/javierrojas/AI Work/Auto XRD Fitting/results/FeF3_debug/checkpoint_04_pre_profile_instrument.gpx
+ Hessian Levenberg-Marquardt SVD refinement on 18 variables:
+initial chi^2 1.4126e+06 with 7501 obs.
+
+Invalid cell metric tensor for phase #0 (fef3 r3c.fixed)
+ values (A): 0.048 0.187 -0.052 -0.029 -0.090 -0.035
+
+Error: Invalid metric tensor for phase #0
+   (fef3 r3c.fixed) See console.
+Check for refinement of conflicting variables
+ouch #3 unable to evaluate objective function;
+****ERROR - Refinement failed
+Note refinement problem:
+Error: Invalid metric tensor for phase #0
+   (fef3 r3c.fixed) See console.
+Check for refinement of conflicting variables
+
+
+ ***** Refinement error *****
+Note refinement problem:
+Error: Invalid metric tensor for phase #0
+   (fef3 r3c.fixed) See console.
+Check for refinement of conflicting variables
+
+
+
+**** ERROR: Refinement failed ****
+  [profile_instrument] failed bounds check (Rwp 10.613 -> 10.613) — reverting to checkpoint

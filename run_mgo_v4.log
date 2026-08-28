@@ -1,0 +1,379 @@
+4 values read from /home/javierrojas/.GSASII/config.ini
+GSAS-II binary directory: /home/javierrojas/.GSASII/bin
+Refinement plan
+----------------
+  pattern : Data/MgO+MgBC/h3_d1_120s_0p5mm_001_exported_exported.xy
+  instprm : Data/MgO+MgBC/D8_parameter-1.prm
+  phase   : Data/MgO+MgBC/MgO.fixed.cif
+  phase   : Data/MgO+MgBC/MgBC.fixed.cif
+  outdir  : results/MgOMgBC_v4
+  bounds  : max_cell_drift=15%
+  stages  :
+    1. background_scale
+    2. sample_displacement
+    3. unit_cell
+    4. profile_instrument
+    5. peak_asymmetry (optional)
+    6. profile_microstrain_size
+    7. extinction (optional)
+    8. preferred_orientation (optional)
+/home/javierrojas/AI Work/Auto XRD Fitting/Data/MgO+MgBC/h3_d1_120s_0p5mm_001_exported_exported.xy read by Reader comma/tab/semicolon separated
+Instrument parameters read: /home/javierrojas/AI Work/Auto XRD Fitting/Data/MgO+MgBC/D8_parameter-1.prm bank 1
+/home/javierrojas/AI Work/Auto XRD Fitting/Data/MgO+MgBC/MgO.fixed.cif read by Reader CIF
+gpx file saved as /home/javierrojas/AI Work/Auto XRD Fitting/results/MgOMgBC_v4/run.gpx
+Unable to find site multiplicities in CIF. No multiplicity cross check.
+/home/javierrojas/AI Work/Auto XRD Fitting/Data/MgO+MgBC/MgBC.fixed.cif read by Reader CIF
+gpx file saved as /home/javierrojas/AI Work/Auto XRD Fitting/results/MgOMgBC_v4/run.gpx
+gpx file saved as /home/javierrojas/AI Work/Auto XRD Fitting/results/MgOMgBC_v4/run.gpx
+ Hessian Levenberg-Marquardt SVD refinement on 0 variables:
+initial chi^2 26010 with 18426 obs.
+Read from file: /home/javierrojas/AI Work/Auto XRD Fitting/results/MgOMgBC_v4/run.bak0.gpx
+Save to file: /home/javierrojas/AI Work/Auto XRD Fitting/results/MgOMgBC_v4/run.gpx
+GPX file save successful
+Refinement results are in file: /home/javierrojas/AI Work/Auto XRD Fitting/results/MgOMgBC_v4/run.lst
+ ***** Refinement successful *****
+Reported from refinement:
+no variables: skipping refinement
+
+  [scale-seed] starting phase Scale(s) rescaled 0.0731x (calculated peak heights were too large relative to the data)
+gpx file saved as /home/javierrojas/AI Work/Auto XRD Fitting/results/MgOMgBC_v4/run.gpx
+gpx file saved as /home/javierrojas/AI Work/Auto XRD Fitting/results/MgOMgBC_v4/checkpoint_01_pre_background_scale.gpx
+gpx file saved as /home/javierrojas/AI Work/Auto XRD Fitting/results/MgOMgBC_v4/run.gpx
+gpx file saved as /home/javierrojas/AI Work/Auto XRD Fitting/results/MgOMgBC_v4/run.gpx
+ Hessian Levenberg-Marquardt SVD refinement on 9 variables:
+initial chi^2 13575 with 18426 obs.
+Cycle 0: 0.03s, Chi**2: 988.73 for 18426 obs., Lambda: 0,  Delta: 0.927, SVD=0
+Cycle 1: 0.03s, Chi**2: 988.65 for 18426 obs., Lambda: 0,  Delta: 7.87e-05, SVD=0
+converged
+Maximum shift/esd = 100.744 for all cycles
+Read from file: /home/javierrojas/AI Work/Auto XRD Fitting/results/MgOMgBC_v4/run.bak0.gpx
+Save to file: /home/javierrojas/AI Work/Auto XRD Fitting/results/MgOMgBC_v4/run.gpx
+GPX file save successful
+Refinement results are in file: /home/javierrojas/AI Work/Auto XRD Fitting/results/MgOMgBC_v4/run.lst
+ ***** Refinement successful *****
+  [background_scale] ok (Rwp 100.000 -> 27.216)
+gpx file saved as /home/javierrojas/AI Work/Auto XRD Fitting/results/MgOMgBC_v4/checkpoint_02_pre_sample_displacement.gpx
+gpx file saved as /home/javierrojas/AI Work/Auto XRD Fitting/results/MgOMgBC_v4/run.gpx
+gpx file saved as /home/javierrojas/AI Work/Auto XRD Fitting/results/MgOMgBC_v4/run.gpx
+ Hessian Levenberg-Marquardt SVD refinement on 9 variables:
+initial chi^2 988.65 with 18426 obs.
+Cycle 0: 0.03s, Chi**2: 988.58 for 18426 obs., Lambda: 0,  Delta: 7.38e-05, SVD=0
+converged
+Maximum shift/esd = 0.843 for all cycles
+Read from file: /home/javierrojas/AI Work/Auto XRD Fitting/results/MgOMgBC_v4/run.bak0.gpx
+Save to file: /home/javierrojas/AI Work/Auto XRD Fitting/results/MgOMgBC_v4/run.gpx
+GPX file save successful
+Refinement results are in file: /home/javierrojas/AI Work/Auto XRD Fitting/results/MgOMgBC_v4/run.lst
+ ***** Refinement successful *****
+  [sample_displacement] ok (Rwp 27.216 -> 27.215)
+gpx file saved as /home/javierrojas/AI Work/Auto XRD Fitting/results/MgOMgBC_v4/checkpoint_03_pre_unit_cell.gpx
+gpx file saved as /home/javierrojas/AI Work/Auto XRD Fitting/results/MgOMgBC_v4/run.gpx
+gpx file saved as /home/javierrojas/AI Work/Auto XRD Fitting/results/MgOMgBC_v4/run.gpx
+ Hessian Levenberg-Marquardt SVD refinement on 12 variables:
+initial chi^2 988.58 with 18426 obs.
+Cycle 0: 0.03s, Chi**2: 987.83 for 18426 obs., Lambda: 0,  Delta: 0.000755, SVD=0
+converged
+Maximum shift/esd = 1.692 for all cycles
+Note highly correlated parameters:
+ ** 0::A0 and :0:DisplaceX (@95.08%)
+Read from file: /home/javierrojas/AI Work/Auto XRD Fitting/results/MgOMgBC_v4/run.bak0.gpx
+Save to file: /home/javierrojas/AI Work/Auto XRD Fitting/results/MgOMgBC_v4/run.gpx
+GPX file save successful
+Refinement results are in file: /home/javierrojas/AI Work/Auto XRD Fitting/results/MgOMgBC_v4/run.lst
+ ***** Refinement successful *****
+Reported from refinement:
+Note highly correlated parameters:
+ ** 0::A0 and :0:DisplaceX (@95.08%)
+  [unit_cell] ok (Rwp 27.215 -> 27.205)
+gpx file saved as /home/javierrojas/AI Work/Auto XRD Fitting/results/MgOMgBC_v4/checkpoint_04_pre_profile_instrument.gpx
+gpx file saved as /home/javierrojas/AI Work/Auto XRD Fitting/results/MgOMgBC_v4/run.gpx
+gpx file saved as /home/javierrojas/AI Work/Auto XRD Fitting/results/MgOMgBC_v4/run.gpx
+ Hessian Levenberg-Marquardt SVD refinement on 15 variables:
+initial chi^2 987.83 with 18426 obs.
+Cycle 0: 0.03s, Chi**2: 877.36 for 18426 obs., Lambda: 0,  Delta: 0.112, SVD=0
+Cycle 1: 0.04s, Chi**2: 691.8 for 18426 obs., Lambda: 0,  Delta: 0.212, SVD=0
+Cycle 2: 0.04s, Chi**2: 449.99 for 18426 obs., Lambda: 0,  Delta: 0.35, SVD=0
+Maximum shift/esd = 102.334 for all cycles
+Note highly correlated parameters:
+ ** :0:U and :0:V (@98.82%)
+ ** :0:V and :0:W (@99.20%)
+Read from file: /home/javierrojas/AI Work/Auto XRD Fitting/results/MgOMgBC_v4/run.bak0.gpx
+Save to file: /home/javierrojas/AI Work/Auto XRD Fitting/results/MgOMgBC_v4/run.gpx
+GPX file save successful
+Refinement results are in file: /home/javierrojas/AI Work/Auto XRD Fitting/results/MgOMgBC_v4/run.lst
+ ***** Refinement successful *****
+Reported from refinement:
+Note highly correlated parameters:
+ ** :0:U and :0:V (@98.82%)
+ ** :0:V and :0:W (@99.20%)
+  [profile_instrument] ok (Rwp 27.205 -> 18.363)
+gpx file saved as /home/javierrojas/AI Work/Auto XRD Fitting/results/MgOMgBC_v4/checkpoint_05_pre_peak_asymmetry.gpx
+gpx file saved as /home/javierrojas/AI Work/Auto XRD Fitting/results/MgOMgBC_v4/run.gpx
+gpx file saved as /home/javierrojas/AI Work/Auto XRD Fitting/results/MgOMgBC_v4/run.gpx
+ Hessian Levenberg-Marquardt SVD refinement on 16 variables:
+initial chi^2 450.04 with 18426 obs.
+divergence: chi^2 1202.6 on 18426 obs. (0 SVD zeros)
+	increasing Marquardt lambda to 1.0e-03
+divergence: chi^2 1190.3 on 18426 obs. (0 SVD zeros)
+	increasing Marquardt lambda to 1.0e-02
+divergence: chi^2 917.95 on 18426 obs. (0 SVD zeros)
+	increasing Marquardt lambda to 1.0e-01
+Cycle 0: 2.64s, Chi**2: 354.19 for 18426 obs., Lambda: 0.1,  Delta: 0.213, SVD=0
+Cycle 1: 0.19s, Chi**2: 261.73 for 18426 obs., Lambda: 0.1,  Delta: 0.261, SVD=0
+Cycle 2: 0.19s, Chi**2: 260.6 for 18426 obs., Lambda: 0.1,  Delta: 0.00431, SVD=0
+Maximum shift/esd = 69.499 for all cycles
+Note highly correlated parameters:
+ ** :0:U and :0:V (@98.64%)
+ ** :0:V and :0:W (@98.53%)
+Read from file: /home/javierrojas/AI Work/Auto XRD Fitting/results/MgOMgBC_v4/run.bak0.gpx
+Save to file: /home/javierrojas/AI Work/Auto XRD Fitting/results/MgOMgBC_v4/run.gpx
+GPX file save successful
+Refinement results are in file: /home/javierrojas/AI Work/Auto XRD Fitting/results/MgOMgBC_v4/run.lst
+ ***** Refinement successful *****
+Reported from refinement:
+Note highly correlated parameters:
+ ** :0:U and :0:V (@98.64%)
+ ** :0:V and :0:W (@98.53%)
+  [peak_asymmetry] ok (Rwp 18.363 -> 13.973)
+gpx file saved as /home/javierrojas/AI Work/Auto XRD Fitting/results/MgOMgBC_v4/checkpoint_06_pre_profile_microstrain_size.gpx
+gpx file saved as /home/javierrojas/AI Work/Auto XRD Fitting/results/MgOMgBC_v4/run.gpx
+gpx file saved as /home/javierrojas/AI Work/Auto XRD Fitting/results/MgOMgBC_v4/run.gpx
+ Hessian Levenberg-Marquardt SVD refinement on 22 variables:
+initial chi^2 260.61 with 18426 obs.
+divergence: chi^2 643.29 on 18426 obs. (0 SVD zeros)
+	increasing Marquardt lambda to 1.0e-03
+divergence: chi^2 534.62 on 18426 obs. (0 SVD zeros)
+	increasing Marquardt lambda to 1.0e-02
+divergence: chi^2 272.88 on 18426 obs. (0 SVD zeros)
+	increasing Marquardt lambda to 1.0e-01
+divergence: chi^2 309.91 on 18426 obs. (0 SVD zeros)
+	increasing Marquardt lambda to 1.0e+00
+divergence: chi^2 275.03 on 18426 obs. (0 SVD zeros)
+	increasing Marquardt lambda to 1.0e+01
+Cycle 0: 1.07s, Chi**2: 258.02 for 18426 obs., Lambda: 10,  Delta: 0.00992, SVD=0
+divergence: chi^2 279.28 on 18426 obs. (0 SVD zeros)
+	increasing Marquardt lambda to 1.0e+01
+Cycle 1: 0.46s, Chi**2: 256.79 for 18426 obs., Lambda: 10,  Delta: 0.00476, SVD=0
+divergence: chi^2 279.84 on 18426 obs. (0 SVD zeros)
+	increasing Marquardt lambda to 1.0e+01
+Cycle 2: 0.46s, Chi**2: 255.95 for 18426 obs., Lambda: 10,  Delta: 0.00329, SVD=0
+Maximum shift/esd = 1.212 for all cycles
+Note highly correlated parameters:
+ ** :0:U and :0:V (@97.57%)
+ ** :0:V and :0:W (@98.02%)
+Read from file: /home/javierrojas/AI Work/Auto XRD Fitting/results/MgOMgBC_v4/run.bak0.gpx
+Save to file: /home/javierrojas/AI Work/Auto XRD Fitting/results/MgOMgBC_v4/run.gpx
+GPX file save successful
+Refinement results are in file: /home/javierrojas/AI Work/Auto XRD Fitting/results/MgOMgBC_v4/run.lst
+ ***** Refinement successful *****
+Reported from refinement:
+Note highly correlated parameters:
+ ** :0:U and :0:V (@97.57%)
+ ** :0:V and :0:W (@98.02%)
+  [profile_microstrain_size] ok (Rwp 13.973 -> 13.848)
+gpx file saved as /home/javierrojas/AI Work/Auto XRD Fitting/results/MgOMgBC_v4/checkpoint_07_pre_extinction.gpx
+gpx file saved as /home/javierrojas/AI Work/Auto XRD Fitting/results/MgOMgBC_v4/run.gpx
+gpx file saved as /home/javierrojas/AI Work/Auto XRD Fitting/results/MgOMgBC_v4/run.gpx
+ Hessian Levenberg-Marquardt SVD refinement on 24 variables:
+initial chi^2 255.95 with 18426 obs.
+divergence: chi^2 521.76 on 18426 obs. (0 SVD zeros)
+	increasing Marquardt lambda to 1.0e-03
+divergence: chi^2 501.15 on 18426 obs. (0 SVD zeros)
+	increasing Marquardt lambda to 1.0e-02
+divergence: chi^2 390.96 on 18426 obs. (0 SVD zeros)
+	increasing Marquardt lambda to 1.0e-01
+divergence: chi^2 278.91 on 18426 obs. (0 SVD zeros)
+	increasing Marquardt lambda to 1.0e+00
+divergence: chi^2 269.31 on 18426 obs. (0 SVD zeros)
+	increasing Marquardt lambda to 1.0e+01
+divergence: chi^2 274.7 on 18426 obs. (0 SVD zeros)
+	increasing Marquardt lambda to 1.0e+02
+ouch #4 stuck: chisq-new 274.7 > chisq0 255.9 with lambda 1e+02
+Maximum shift/esd = 0.000 for all cycles
+Note highly correlated parameters:
+ ** 0:0:Scale and 0:0:Extinction (@97.85%)
+ ** :0:U and :0:V (@97.70%)
+ ** :0:V and :0:W (@98.08%)
+Read from file: /home/javierrojas/AI Work/Auto XRD Fitting/results/MgOMgBC_v4/run.bak0.gpx
+Save to file: /home/javierrojas/AI Work/Auto XRD Fitting/results/MgOMgBC_v4/run.gpx
+GPX file save successful
+Refinement results are in file: /home/javierrojas/AI Work/Auto XRD Fitting/results/MgOMgBC_v4/run.lst
+ ***** Refinement successful *****
+Reported from refinement:
+Note highly correlated parameters:
+ ** 0:0:Scale and 0:0:Extinction (@97.85%)
+ ** :0:U and :0:V (@97.70%)
+ ** :0:V and :0:W (@98.08%)
+  [extinction] failed bounds check (Rwp 13.848 -> 14.346) — reverting to checkpoint
+/home/javierrojas/g2main/GSAS-II/GSASII/GSASIIstrMain.py:402: RuntimeWarning: invalid value encountered in divide
+  Rvals['Max shft/sig'] = np.max(np.nan_to_num(Lastshft/sig))
+gpx file saved as /home/javierrojas/AI Work/Auto XRD Fitting/results/MgOMgBC_v4/checkpoint_08_pre_preferred_orientation.gpx
+gpx file saved as /home/javierrojas/AI Work/Auto XRD Fitting/results/MgOMgBC_v4/run.gpx
+gpx file saved as /home/javierrojas/AI Work/Auto XRD Fitting/results/MgOMgBC_v4/run.gpx
+ Hessian Levenberg-Marquardt SVD refinement on 24 variables:
+initial chi^2 255.95 with 18426 obs.
+ouch #1 dropping singularities for variable(s) #[4]
+divergence: chi^2 342.66 on 18426 obs. (0 SVD zeros)
+	increasing Marquardt lambda to 1.0e-03
+divergence: chi^2 324.72 on 18426 obs. (0 SVD zeros)
+	increasing Marquardt lambda to 1.0e-02
+divergence: chi^2 269.99 on 18426 obs. (0 SVD zeros)
+	increasing Marquardt lambda to 1.0e-01
+divergence: chi^2 309.91 on 18426 obs. (0 SVD zeros)
+	increasing Marquardt lambda to 1.0e+00
+divergence: chi^2 280.47 on 18426 obs. (0 SVD zeros)
+	increasing Marquardt lambda to 1.0e+01
+divergence: chi^2 276.9 on 18426 obs. (0 SVD zeros)
+	increasing Marquardt lambda to 1.0e+02
+ouch #4 stuck: chisq-new 276.9 > chisq0 255.9 with lambda 1e+02
+Error determining highly correlated vars
+
+Cycle 0: 1.11s Chi2: 276.9; Obs: 18426; Lam: 10 Del: -0.0819; drop=1, SVD=0
+converged
+Warning: Hessian normalization problem
+Maximum shift/esd = 0.000 for all cycles
+Error: 1 Parameter(s) dropped:
+  0:0:MD
+Read from file: /home/javierrojas/AI Work/Auto XRD Fitting/results/MgOMgBC_v4/run.bak0.gpx
+Save to file: /home/javierrojas/AI Work/Auto XRD Fitting/results/MgOMgBC_v4/run.gpx
+GPX file save successful
+Refinement results are in file: /home/javierrojas/AI Work/Auto XRD Fitting/results/MgOMgBC_v4/run.lst
+ ***** Refinement successful *****
+Reported from refinement:
+Error: 1 Parameter(s) dropped:
+0:0:MD
+/home/javierrojas/g2main/GSAS-II/GSASII/GSASIIstrMain.py:402: RuntimeWarning: invalid value encountered in divide
+  Rvals['Max shft/sig'] = np.max(np.nan_to_num(Lastshft/sig))
+gpx file saved as /home/javierrojas/AI Work/Auto XRD Fitting/results/MgOMgBC_v4/run.gpx
+gpx file saved as /home/javierrojas/AI Work/Auto XRD Fitting/results/MgOMgBC_v4/run.gpx
+ Hessian Levenberg-Marquardt SVD refinement on 24 variables:
+initial chi^2 255.95 with 18426 obs.
+ouch #1 dropping singularities for variable(s) #[4]
+divergence: chi^2 342.66 on 18426 obs. (0 SVD zeros)
+	increasing Marquardt lambda to 1.0e-03
+divergence: chi^2 324.72 on 18426 obs. (0 SVD zeros)
+	increasing Marquardt lambda to 1.0e-02
+divergence: chi^2 269.99 on 18426 obs. (0 SVD zeros)
+	increasing Marquardt lambda to 1.0e-01
+divergence: chi^2 309.91 on 18426 obs. (0 SVD zeros)
+	increasing Marquardt lambda to 1.0e+00
+divergence: chi^2 280.47 on 18426 obs. (0 SVD zeros)
+	increasing Marquardt lambda to 1.0e+01
+divergence: chi^2 276.9 on 18426 obs. (0 SVD zeros)
+	increasing Marquardt lambda to 1.0e+02
+ouch #4 stuck: chisq-new 276.9 > chisq0 255.9 with lambda 1e+02
+Error determining highly correlated vars
+
+Cycle 0: 1.15s Chi2: 276.9; Obs: 18426; Lam: 10 Del: -0.0819; drop=1, SVD=0
+converged
+Warning: Hessian normalization problem
+Maximum shift/esd = 0.000 for all cycles
+Error: 1 Parameter(s) dropped:
+  0:0:MD
+Read from file: /home/javierrojas/AI Work/Auto XRD Fitting/results/MgOMgBC_v4/run.bak0.gpx
+Save to file: /home/javierrojas/AI Work/Auto XRD Fitting/results/MgOMgBC_v4/run.gpx
+GPX file save successful
+Refinement results are in file: /home/javierrojas/AI Work/Auto XRD Fitting/results/MgOMgBC_v4/run.lst
+ ***** Refinement successful *****
+Reported from refinement:
+Error: 1 Parameter(s) dropped:
+0:0:MD
+/home/javierrojas/g2main/GSAS-II/GSASII/GSASIIstrMain.py:402: RuntimeWarning: invalid value encountered in divide
+  Rvals['Max shft/sig'] = np.max(np.nan_to_num(Lastshft/sig))
+gpx file saved as /home/javierrojas/AI Work/Auto XRD Fitting/results/MgOMgBC_v4/run.gpx
+gpx file saved as /home/javierrojas/AI Work/Auto XRD Fitting/results/MgOMgBC_v4/run.gpx
+ Hessian Levenberg-Marquardt SVD refinement on 24 variables:
+initial chi^2 255.95 with 18426 obs.
+ouch #1 dropping singularities for variable(s) #[4]
+divergence: chi^2 342.66 on 18426 obs. (0 SVD zeros)
+	increasing Marquardt lambda to 1.0e-03
+divergence: chi^2 324.72 on 18426 obs. (0 SVD zeros)
+	increasing Marquardt lambda to 1.0e-02
+divergence: chi^2 269.99 on 18426 obs. (0 SVD zeros)
+	increasing Marquardt lambda to 1.0e-01
+divergence: chi^2 309.91 on 18426 obs. (0 SVD zeros)
+	increasing Marquardt lambda to 1.0e+00
+divergence: chi^2 280.47 on 18426 obs. (0 SVD zeros)
+	increasing Marquardt lambda to 1.0e+01
+divergence: chi^2 276.9 on 18426 obs. (0 SVD zeros)
+	increasing Marquardt lambda to 1.0e+02
+ouch #4 stuck: chisq-new 276.9 > chisq0 255.9 with lambda 1e+02
+Error determining highly correlated vars
+
+Cycle 0: 1.16s Chi2: 276.9; Obs: 18426; Lam: 10 Del: -0.0819; drop=1, SVD=0
+converged
+Warning: Hessian normalization problem
+Maximum shift/esd = 0.000 for all cycles
+Error: 1 Parameter(s) dropped:
+  0:0:MD
+Read from file: /home/javierrojas/AI Work/Auto XRD Fitting/results/MgOMgBC_v4/run.bak0.gpx
+Save to file: /home/javierrojas/AI Work/Auto XRD Fitting/results/MgOMgBC_v4/run.gpx
+GPX file save successful
+Refinement results are in file: /home/javierrojas/AI Work/Auto XRD Fitting/results/MgOMgBC_v4/run.lst
+ ***** Refinement successful *****
+Reported from refinement:
+Error: 1 Parameter(s) dropped:
+0:0:MD
+/home/javierrojas/g2main/GSAS-II/GSASII/GSASIIstrMain.py:402: RuntimeWarning: invalid value encountered in divide
+  Rvals['Max shft/sig'] = np.max(np.nan_to_num(Lastshft/sig))
+gpx file saved as /home/javierrojas/AI Work/Auto XRD Fitting/results/MgOMgBC_v4/run.gpx
+gpx file saved as /home/javierrojas/AI Work/Auto XRD Fitting/results/MgOMgBC_v4/run.gpx
+ Hessian Levenberg-Marquardt SVD refinement on 24 variables:
+initial chi^2 255.95 with 18426 obs.
+ouch #1 dropping singularities for variable(s) #[4]
+divergence: chi^2 342.66 on 18426 obs. (0 SVD zeros)
+	increasing Marquardt lambda to 1.0e-03
+divergence: chi^2 324.72 on 18426 obs. (0 SVD zeros)
+	increasing Marquardt lambda to 1.0e-02
+divergence: chi^2 269.99 on 18426 obs. (0 SVD zeros)
+	increasing Marquardt lambda to 1.0e-01
+divergence: chi^2 309.91 on 18426 obs. (0 SVD zeros)
+	increasing Marquardt lambda to 1.0e+00
+divergence: chi^2 280.47 on 18426 obs. (0 SVD zeros)
+	increasing Marquardt lambda to 1.0e+01
+divergence: chi^2 276.9 on 18426 obs. (0 SVD zeros)
+	increasing Marquardt lambda to 1.0e+02
+ouch #4 stuck: chisq-new 276.9 > chisq0 255.9 with lambda 1e+02
+Error determining highly correlated vars
+
+Cycle 0: 1.16s Chi2: 276.9; Obs: 18426; Lam: 10 Del: -0.0819; drop=1, SVD=0
+converged
+Warning: Hessian normalization problem
+Maximum shift/esd = 0.000 for all cycles
+Error: 1 Parameter(s) dropped:
+  0:0:MD
+Read from file: /home/javierrojas/AI Work/Auto XRD Fitting/results/MgOMgBC_v4/run.bak0.gpx
+Save to file: /home/javierrojas/AI Work/Auto XRD Fitting/results/MgOMgBC_v4/run.gpx
+GPX file save successful
+Refinement results are in file: /home/javierrojas/AI Work/Auto XRD Fitting/results/MgOMgBC_v4/run.lst
+ ***** Refinement successful *****
+Reported from refinement:
+Error: 1 Parameter(s) dropped:
+0:0:MD
+/home/javierrojas/g2main/GSAS-II/GSASII/GSASIIstrMath.py:3073: RuntimeWarning: invalid value encountered in sqrt
+  A = 1.0/np.sqrt((MD*cosP)**2+sinP**2/MD)
+/home/javierrojas/g2main/GSAS-II/GSASII/GSASIIstrMath.py:3089: RuntimeWarning: invalid value encountered in sqrt
+  A = 1.0/np.sqrt((MD*cosP)**2+sinP**2/MD)
+gpx file saved as /home/javierrojas/AI Work/Auto XRD Fitting/results/MgOMgBC_v4/run.gpx
+gpx file saved as /home/javierrojas/AI Work/Auto XRD Fitting/results/MgOMgBC_v4/run.gpx
+ Hessian Levenberg-Marquardt SVD refinement on 24 variables:
+initial chi^2 255.95 with 18426 obs.
+Cycle 0: 0.15s, Chi**2: 145.17 for 18426 obs., Lambda: 0,  Delta: 0.433, SVD=0
+ouch #2 bad SVD inversion; dropping terms for for variable(s) #[np.int64(0)]
+ouch #2 bad SVD inversion; dropping terms for for variable(s) #[np.int64(0)]
+ouch #2 bad SVD inversion; dropping terms for for variable(s) #[np.int64(0)]
+giving up with ouch #2
+****ERROR - Refinement failed
+Note refinement problem:
+SVD inversion failure
+
+ ***** Refinement error *****
+Note refinement problem:
+SVD inversion failure
+
+
+**** ERROR: Refinement failed ****
+  [preferred_orientation (fallback: pref_ori_111)] raised RuntimeError("GSAS-II solver reported an internal failure ('Refinement failed') that do_refinements() did not raise on") — reverting to checkpoint
+gpx file saved as /home/javierrojas/AI Work/Auto XRD Fitting/results/MgOMgBC_v4/final.gpx
+
+Refinement complete. See summary.json / summary.csv / refined_phase_*.cif in results/MgOMgBC_v4

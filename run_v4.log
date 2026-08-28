@@ -1,0 +1,124 @@
+N.B. Configuration file /home/javierrojas/.GSASII/config.ini does not exist
+New install: start without a config.py file
+0 values read from /home/javierrojas/.GSASII/config.ini
+GSAS-II binary directory: /home/javierrojas/.GSASII/bin
+Refinement plan
+----------------
+  pattern : Data/FeF3/r3c 20.txt
+  instprm : Data/FeF3/ws2.prm
+  phase   : Data/FeF3/fef3 r3c.fixed.cif
+  outdir  : results/FeF3_v4
+  bounds  : max_cell_drift=15%
+  stages  :
+    1. background_scale
+    2. sample_displacement
+    3. unit_cell
+    4. profile_instrument
+    5. profile_microstrain_size
+/home/javierrojas/AI Work/Auto XRD Fitting/Data/FeF3/r3c 20.txt read by Reader Rigaku .txt exported
+Instrument parameters read: /home/javierrojas/AI Work/Auto XRD Fitting/Data/FeF3/ws2.prm bank 1
+Unable to find site multiplicities in CIF. No multiplicity cross check.
+/home/javierrojas/AI Work/Auto XRD Fitting/Data/FeF3/fef3 r3c.fixed.cif read by Reader CIF
+gpx file saved as /home/javierrojas/AI Work/Auto XRD Fitting/results/FeF3_v4/run.gpx
+gpx file saved as /home/javierrojas/AI Work/Auto XRD Fitting/results/FeF3_v4/run.gpx
+gpx file saved as /home/javierrojas/AI Work/Auto XRD Fitting/results/FeF3_v4/checkpoint_01_pre_background_scale.gpx
+gpx file saved as /home/javierrojas/AI Work/Auto XRD Fitting/results/FeF3_v4/run.gpx
+gpx file saved as /home/javierrojas/AI Work/Auto XRD Fitting/results/FeF3_v4/run.gpx
+ Hessian Levenberg-Marquardt SVD refinement on 8 variables:
+initial chi^2 1.2519e+08 with 7501 obs.
+Cycle 0: 15.59s, Chi**2: 1.4123e+06 for 7501 obs., Lambda: 0,  Delta: 0.989, SVD=0
+Cycle 1: 15.54s, Chi**2: 1.4123e+06 for 7501 obs., Lambda: 0,  Delta: -1.29e-06, SVD=0
+converged
+Maximum shift/esd = 625.169 for all cycles
+Read from file: /home/javierrojas/AI Work/Auto XRD Fitting/results/FeF3_v4/run.bak0.gpx
+Save to file: /home/javierrojas/AI Work/Auto XRD Fitting/results/FeF3_v4/run.gpx
+GPX file save successful
+Refinement results are in file: /home/javierrojas/AI Work/Auto XRD Fitting/results/FeF3_v4/run.lst
+ ***** Refinement successful *****
+  [background_scale] ok (Rwp nan -> 10.613)
+gpx file saved as /home/javierrojas/AI Work/Auto XRD Fitting/results/FeF3_v4/checkpoint_02_pre_sample_displacement.gpx
+gpx file saved as /home/javierrojas/AI Work/Auto XRD Fitting/results/FeF3_v4/run.gpx
+gpx file saved as /home/javierrojas/AI Work/Auto XRD Fitting/results/FeF3_v4/run.gpx
+ Hessian Levenberg-Marquardt SVD refinement on 8 variables:
+initial chi^2 1.4123e+06 with 7501 obs.
+Cycle 0: 15.46s, Chi**2: 1.4123e+06 for 7501 obs., Lambda: 0,  Delta: -1.15e-06, SVD=0
+converged
+Maximum shift/esd = 0.170 for all cycles
+Read from file: /home/javierrojas/AI Work/Auto XRD Fitting/results/FeF3_v4/run.bak0.gpx
+Save to file: /home/javierrojas/AI Work/Auto XRD Fitting/results/FeF3_v4/run.gpx
+GPX file save successful
+Refinement results are in file: /home/javierrojas/AI Work/Auto XRD Fitting/results/FeF3_v4/run.lst
+ ***** Refinement successful *****
+  [sample_displacement] ok (Rwp 10.613 -> 10.613)
+gpx file saved as /home/javierrojas/AI Work/Auto XRD Fitting/results/FeF3_v4/checkpoint_03_pre_unit_cell.gpx
+gpx file saved as /home/javierrojas/AI Work/Auto XRD Fitting/results/FeF3_v4/run.gpx
+gpx file saved as /home/javierrojas/AI Work/Auto XRD Fitting/results/FeF3_v4/run.gpx
+ Hessian Levenberg-Marquardt SVD refinement on 14 variables:
+initial chi^2 1.4123e+06 with 7501 obs.
+Cycle 0: 15.91s, Chi**2: 1.4124e+06 for 7501 obs., Lambda: 0,  Delta: -6.71e-05, SVD=3
+converged
+Maximum shift/esd = 0.371 for all cycles
+SVD problem(s) likely from:
+  0::A4, 0::A5, :0:DisplaceX
+Note highly correlated parameters:
+ ** 0::A1 and 0::A2 (@100.00%)
+ ** 0::A3 and 0::A4 (@100.00%)
+Read from file: /home/javierrojas/AI Work/Auto XRD Fitting/results/FeF3_v4/run.bak0.gpx
+Save to file: /home/javierrojas/AI Work/Auto XRD Fitting/results/FeF3_v4/run.gpx
+GPX file save successful
+Refinement results are in file: /home/javierrojas/AI Work/Auto XRD Fitting/results/FeF3_v4/run.lst
+ ***** Refinement successful *****
+Reported from refinement:
+Warning: 3 soft (SVD) Hessian singularities
+SVD problem(s) likely from:
+0::A4, 0::A5, :0:DisplaceX
+Note highly correlated parameters:
+ ** 0::A1 and 0::A2 (@100.00%)
+ ** 0::A3 and 0::A4 (@100.00%)
+  [unit_cell] failed bounds check (Rwp 10.613 -> 10.613) — reverting to checkpoint
+gpx file saved as /home/javierrojas/AI Work/Auto XRD Fitting/results/FeF3_v4/checkpoint_04_pre_profile_instrument.gpx
+gpx file saved as /home/javierrojas/AI Work/Auto XRD Fitting/results/FeF3_v4/run.gpx
+gpx file saved as /home/javierrojas/AI Work/Auto XRD Fitting/results/FeF3_v4/run.gpx
+ Hessian Levenberg-Marquardt SVD refinement on 11 variables:
+initial chi^2 1.4123e+06 with 7501 obs.
+Cycle 0: 20.30s, Chi**2: 1.4123e+06 for 7501 obs., Lambda: 0,  Delta: -4.65e-05, SVD=0
+converged
+Maximum shift/esd = 1.547 for all cycles
+Note highly correlated parameters:
+ ** :0:U and :0:V (@96.16%)
+Read from file: /home/javierrojas/AI Work/Auto XRD Fitting/results/FeF3_v4/run.bak0.gpx
+Save to file: /home/javierrojas/AI Work/Auto XRD Fitting/results/FeF3_v4/run.gpx
+GPX file save successful
+Refinement results are in file: /home/javierrojas/AI Work/Auto XRD Fitting/results/FeF3_v4/run.lst
+ ***** Refinement successful *****
+Reported from refinement:
+Note highly correlated parameters:
+ ** :0:U and :0:V (@96.16%)
+  [profile_instrument] ok (Rwp 10.613 -> 10.613)
+gpx file saved as /home/javierrojas/AI Work/Auto XRD Fitting/results/FeF3_v4/checkpoint_05_pre_profile_microstrain_size.gpx
+gpx file saved as /home/javierrojas/AI Work/Auto XRD Fitting/results/FeF3_v4/run.gpx
+gpx file saved as /home/javierrojas/AI Work/Auto XRD Fitting/results/FeF3_v4/run.gpx
+ Hessian Levenberg-Marquardt SVD refinement on 14 variables:
+initial chi^2 1.4123e+06 with 7501 obs.
+Cycle 0: 78.45s, Chi**2: 1.413e+06 for 7501 obs., Lambda: 0,  Delta: -0.000436, SVD=1
+converged
+Maximum shift/esd = 0.754 for all cycles
+SVD problem(s) likely from:
+  :0:W
+Note highly correlated parameters:
+ ** :0:U and :0:W (@96.26%)
+Read from file: /home/javierrojas/AI Work/Auto XRD Fitting/results/FeF3_v4/run.bak0.gpx
+Save to file: /home/javierrojas/AI Work/Auto XRD Fitting/results/FeF3_v4/run.gpx
+GPX file save successful
+Refinement results are in file: /home/javierrojas/AI Work/Auto XRD Fitting/results/FeF3_v4/run.lst
+ ***** Refinement successful *****
+Reported from refinement:
+Warning: Soft (SVD) singularity in the Hessian
+SVD problem(s) likely from:
+:0:W
+Note highly correlated parameters:
+ ** :0:U and :0:W (@96.26%)
+  [profile_microstrain_size] ok (Rwp 10.613 -> 10.615)
+gpx file saved as /home/javierrojas/AI Work/Auto XRD Fitting/results/FeF3_v4/final.gpx
+
+Completed with 1 stage(s) not converged: unit_cell

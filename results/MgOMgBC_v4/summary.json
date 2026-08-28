@@ -1,0 +1,134 @@
+{
+  "pattern": "Data/MgO+MgBC/h3_d1_120s_0p5mm_001_exported_exported.xy",
+  "instprm": "Data/MgO+MgBC/D8_parameter-1.prm",
+  "phases": [
+    "Data/MgO+MgBC/MgO.fixed.cif",
+    "Data/MgO+MgBC/MgBC.fixed.cif"
+  ],
+  "stages": [
+    {
+      "name": "background_scale",
+      "status": "ok",
+      "rwp_before": 100.0,
+      "rwp_after": 27.216203203991597,
+      "detail": "",
+      "optional": false
+    },
+    {
+      "name": "sample_displacement",
+      "status": "ok",
+      "rwp_before": 27.216203203991597,
+      "rwp_after": 27.215199005061258,
+      "detail": "",
+      "optional": false
+    },
+    {
+      "name": "unit_cell",
+      "status": "ok",
+      "rwp_before": 27.215199005061258,
+      "rwp_after": 27.204917599313283,
+      "detail": "",
+      "optional": false
+    },
+    {
+      "name": "profile_instrument",
+      "status": "ok",
+      "rwp_before": 27.204917599313283,
+      "rwp_after": 18.362545143833817,
+      "detail": "",
+      "optional": false
+    },
+    {
+      "name": "peak_asymmetry",
+      "status": "ok",
+      "rwp_before": 18.362545143833817,
+      "rwp_after": 13.973319059873996,
+      "detail": "",
+      "optional": true
+    },
+    {
+      "name": "profile_microstrain_size",
+      "status": "ok",
+      "rwp_before": 13.973319059873996,
+      "rwp_after": 13.847870177247692,
+      "detail": "",
+      "optional": false
+    },
+    {
+      "name": "extinction",
+      "status": "failed_bounds",
+      "rwp_before": 13.847870177247692,
+      "rwp_after": 14.346093028612989,
+      "detail": "",
+      "optional": true
+    },
+    {
+      "name": "preferred_orientation",
+      "status": "failed_error",
+      "rwp_before": 13.847870177247692,
+      "rwp_after": NaN,
+      "detail": "GSAS-II solver reported an internal failure ('Refinement failed') that do_refinements() did not raise on",
+      "optional": true
+    }
+  ],
+  "final_rwp": 13.847870177247692,
+  "fit_quality": {
+    "calc_obs_correlation": 0.9579587174626732,
+    "needs_review": false,
+    "reason": ""
+  },
+  "cells": {
+    "MgO.fixed": {
+      "length_a": 4.212831145526981,
+      "length_b": 4.212831145526981,
+      "length_c": 4.212831145526981,
+      "angle_alpha": 90.0,
+      "angle_beta": 90.0,
+      "angle_gamma": 90.0,
+      "volume": 74.76910077630954
+    },
+    "MgBC.fixed": {
+      "length_a": 2.898893193712504,
+      "length_b": 2.898893193712504,
+      "length_c": 3.61874615845008,
+      "angle_alpha": 90.0,
+      "angle_beta": 90.0,
+      "angle_gamma": 120.00000000000001,
+      "volume": 26.336204201030842
+    }
+  },
+  "cell_esds": {
+    "MgO.fixed": {
+      "length_a": 0.0001985795075601143,
+      "length_b": 0.0001985795075601143,
+      "length_c": 0.0001985795075601143,
+      "angle_alpha": 0.0,
+      "angle_beta": 0.0,
+      "angle_gamma": 0.0,
+      "volume": 0.010573135197199839
+    },
+    "MgBC.fixed": {
+      "length_a": 0.0004994163314744024,
+      "length_b": 0.0004994163314744024,
+      "length_c": 0.0005008894740473111,
+      "angle_alpha": 0.0,
+      "angle_beta": 0.0,
+      "angle_gamma": 0.0,
+      "volume": 0.004870777387913293
+    }
+  },
+  "limits_full_range": [
+    3.875,
+    95.9999979408458
+  ],
+  "limits_applied": [
+    3.875,
+    95.9999979408458
+  ],
+  "pattern_raw_csv": "results/MgOMgBC_v4/pattern_raw.csv",
+  "fit_final_csv": "results/MgOMgBC_v4/fit_final.csv",
+  "refined_cifs": [
+    "results/MgOMgBC_v4/refined_phase_0_MgO.fixed.cif",
+    "results/MgOMgBC_v4/refined_phase_1_MgBC.fixed.cif"
+  ]
+}

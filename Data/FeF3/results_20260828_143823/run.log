@@ -1,0 +1,6 @@
+  [limits] fitting restricted to [20.0, 80.0]
+  [background_scale] ok (Rwp nan -> 8.882)
+  [sample_displacement] ok (Rwp 8.882 -> 8.882)
+  [unit_cell] ok (Rwp 8.882 -> 7.966)
+  [profile_instrument] ok (Rwp 7.966 -> 6.377)
+  [profile_microstrain_size] ok (Rwp 6.377 -> 6.389)

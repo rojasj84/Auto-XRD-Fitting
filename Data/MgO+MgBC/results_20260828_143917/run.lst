@@ -1,0 +1,310 @@
+********************************************************************************
+   General Structure Analysis System-II Crystal Structure Refinement
+              by Robert B. Von Dreele & Brian H. Toby
+                Argonne National Laboratory(C), 2010
+ This product includes software developed by the UChicago Argonne, LLC,
+            as Operator of Argonne National Laboratory.
+                          Please cite:
+   B.H. Toby & R.B. Von Dreele, J. Appl. Cryst. 46, 544-549 (2013)
+********************************************************************************
+ Least squares controls:
+ Refinement type: analytic Hessian
+ Maximum number of cycles: 3
+ Regularize hydrogens (if any): False
+ Initial shift factor: 1.000
+
+ Phases:
+
+ Phase name: MgBC.fixed
+=======================================================================================================================================
+
+ X-ray scattering factors:
+   Symbol     fa                                      fb                                      fc
+---------------------------------------------------------------------------------------------------
+ Mg         5.42040   2.17350   1.22690   2.30730   2.82750  79.26110   0.38080   7.19370   0.85840
+ B          2.05450   1.33260   1.09790   0.70680  23.21850   1.02100  60.34980   0.14030  -0.19320
+ C          2.31000   1.02000   1.58860   0.86500  20.84390  10.20750   0.56870  51.65120   0.21560
+
+ Electron scattering factors:
+   Symbol     fa                                                fb
+---------------------------------------------------------------------------------------------------
+ Mg         0.11300   0.55750   0.90460   2.15800   1.47350   0.13560   1.35790   6.92550  32.31650  92.11380
+ B          0.04360   0.18980   0.67880   1.32730   0.55440   0.12070   1.15950   6.24740  21.04600  59.36190
+ C          0.04890   0.20910   0.75370   1.14200   0.35550   0.11400   1.08250   5.42810  17.88110  51.13410
+
+ Neutron scattering factors:
+   Symbol   isotope       mass       b       resonant terms
+---------------------------------------------------------------------------------------------------
+ Mg      Nat. Abund.     24.305    0.537
+ B       Nat. Abund.     10.810    0.530
+ C       Nat. Abund.     12.011    0.665
+
+ Space Group: P -6 m 2
+ The lattice is noncentrosymmetric primitive hexagonal
+ The Laue symmetry is 6/mmm
+ The lattice point group is -6m2
+ Multiplicity of a general site is 12
+ 
+ The equivalent positions are:
+
+ ( 1)     X,     Y,     Z 
+ ( 2)   Y-X,    -X,    -Z 
+ ( 3)    -Y,   X-Y,     Z 
+ ( 4)     X,     Y,    -Z 
+ ( 5)   Y-X,    -X,     Z 
+ ( 6)    -Y,   X-Y,    -Z 
+ ( 7)   Y-X,     Y,     Z 
+ ( 8)     X,   X-Y,    -Z 
+ ( 9)    -Y,    -X,     Z 
+ (10)   Y-X,     Y,    -Z 
+ (11)     X,   X-Y,     Z 
+ (12)    -Y,    -X,    -Z 
+
+ Atoms:
+   name    type  refine?   x         y         z      frac site sym  mult I/A   Uiso     U11     U22     U33     U12     U13     U23
+---------------------------------------------------------------------------------------------------------------------------------------
+    Mg0     Mg          0.00000   0.00000   0.00000   1.000-6m2(100)    1    I 0.00000                                                
+     B1      B          0.66667   0.33333   0.50000   1.000-6m2(100)    1    I 0.00000                                                
+     C2      C          0.33333   0.66667   0.50000   1.000-6m2(100)    1    I 0.00000                                                
+
+ Unit cell: a = 2.89894 b = 2.89894 c = 3.61756 alpha = 90.000 beta = 90.000 gamma = 120.000 volume = 26.328 Refine? True
+
+ Phase name: MgO.fixed
+=======================================================================================================================================
+
+ X-ray scattering factors:
+   Symbol     fa                                      fb                                      fc
+---------------------------------------------------------------------------------------------------
+ Mg+2       3.49880   3.83780   1.32840   0.84970   2.16760   4.75420   0.18500  10.14110   0.48530
+ O-2        3.76936   2.53342   1.91579   1.55094  15.07970   6.30430  40.34450   0.31291   0.22789
+
+ Electron scattering factors:
+   Symbol     fa                                                fb
+---------------------------------------------------------------------------------------------------
+ Mg         0.11300   0.55750   0.90460   2.15800   1.47350   0.13560   1.35790   6.92550  32.31650  92.11380
+ O          0.03650   0.17290   0.58050   0.88140   0.31210   0.06520   0.61840   2.94490   9.62980  28.21940
+
+ Neutron scattering factors:
+   Symbol   isotope       mass       b       resonant terms
+---------------------------------------------------------------------------------------------------
+ Mg+2    Nat. Abund.     24.305    0.537
+ O-2     Nat. Abund.     15.999    0.580
+
+ Space Group: F m -3 m
+ The lattice is centrosymmetric F-centered cubic
+ The Laue symmetry is m3m
+ The lattice point group is m3m
+ Multiplicity of a general site is 192
+ The inversion center is located at 0,0,0
+ 
+ The equivalent positions are:
+
+ (0,0,0; 0,1/2,1/2; 1/2,0,1/2; 1/2,1/2,0)+
+
+ ( 1)     X,     Y,     Z 
+ ( 2)     Z,     X,     Y 
+ ( 3)     Y,     Z,     X 
+ ( 4)     X,     Y,    -Z 
+ ( 5)    -Z,     X,     Y 
+ ( 6)     Y,    -Z,     X 
+ ( 7)    -Z,     X,    -Y 
+ ( 8)    -Y,    -Z,     X 
+ ( 9)     Y,    -Z,    -X 
+ (10)    -X,     Y,    -Z 
+ (11)    -Z,    -X,     Y 
+ (12)     X,    -Y,    -Z 
+ (13)     Y,     X,     Z 
+ (14)     Z,     Y,     X 
+ (15)     X,     Z,     Y 
+ (16)     Y,     X,    -Z 
+ (17)    -Z,     Y,     X 
+ (18)     X,    -Z,     Y 
+ (19)    -Z,     Y,    -X 
+ (20)    -X,    -Z,     Y 
+ (21)     X,    -Z,    -Y 
+ (22)    -Y,     X,    -Z 
+ (23)    -Z,    -Y,     X 
+ (24)     Y,    -X,    -Z 
+
+ Atoms:
+   name    type  refine?   x         y         z      frac site sym  mult I/A   Uiso     U11     U22     U33     U12     U13     U23
+---------------------------------------------------------------------------------------------------------------------------------------
+    Mg1   Mg+2          0.00000   0.00000   0.00000   1.000    m3m    4    I 0.00395                                                
+     O1    O-2          0.50000   0.50000   0.50000   1.000    m3m    4    I 0.00458                                                
+
+ Unit cell: a = 4.21439 b = 4.21439 c = 4.21439 alpha = 90.000 beta = 90.000 gamma = 90.000 volume = 74.852 Refine? True
+
+ Phase: MgBC.fixed in histogram: PWDR h3_d1_120s_0p5mm_001_exported_exported.xy
+=======================================================================================================================================
+ Phase fraction  :     0.2995 Refine? True
+ Extinction coeff:     0.0000 Refine? False
+ March-Dollase PO:     1.0000 Refine? False Axis: 0 0 1
+
+ Size model    : isotropic equatorial:       1.000 Refine? True
+	 LG mixing coeff.:       1.0000 Refine? False
+
+ Mustrain model:  uniaxial equatorial:      1000.0 Refine? True axial:      1000.0 Refine? True
+	 LG mixing coeff.:      1.0000 Refine? False
+
+ Hydrostatic/elastic strain:
+ names :         D11         D33
+ values:           0           0
+ refine:       False       False
+
+ Phase: MgO.fixed in histogram: PWDR h3_d1_120s_0p5mm_001_exported_exported.xy
+=======================================================================================================================================
+ Phase fraction  :     0.3647 Refine? True
+ Extinction coeff:     0.0000 Refine? False
+ March-Dollase PO:     1.0000 Refine? False Axis: 0 0 1
+
+ Size model    : isotropic equatorial:       1.000 Refine? True
+	 LG mixing coeff.:       1.0000 Refine? False
+
+ Mustrain model:  uniaxial equatorial:      1000.0 Refine? True axial:      1000.0 Refine? True
+	 LG mixing coeff.:      1.0000 Refine? False
+
+ Hydrostatic/elastic strain:
+ names :         D11          eA
+ values:           0           0
+ refine:       False       False
+
+ Histogram: PWDR h3_d1_120s_0p5mm_001_exported_exported.xy histogram Id: 0
+=======================================================================================================================================
+ Instrument type: Debye-Scherrer
+ Histogram limits:    30.00 deg to    70.00 deg
+
+ Sample Parameters:
+ Goniometer omega = 0.00, chi = 0.00, phi = 0.00
+ name  :         Scale    Absorption     DisplaceX     DisplaceY
+ value :        1.0000        0.0000      150.8816        0.0000
+ refine:         False         False          True         False
+
+ Instrument Parameters:
+ name  :     Azimuth         Lam    Polariz.        SH/L           U           V           W           X           Y
+ value :    0.000000    1.540500    0.400000    0.002000 -139.585783  146.730526   15.850106    0.000000    0.000000
+ refine:                   False       False       False        True        True        True       False       False
+
+ name  :           Z        Zero
+ value :    0.000000    0.000000
+ refine:       False       False
+
+ Background function: chebyschev-1 Refine? True
+ Coefficients:      0.635    -0.317     0.047    -0.001    -0.041    -0.039
+ Fixed background file: ; mult: 1.000  Refine? False
+
+ Refinement results:
+---------------------------------------------------------------------------------------------------------------------------------------
+ Number of function calls: 11 No. of observations: 8001 No. of parameters: 21 User rejected: 0 Sp. gp. extinct: 0
+ Refinement time =    0.197s,    0.049s/cycle, for 4 cycles
+ wR =   14.17%, chi**2 =      124.814, GOF =   0.13
+----------------------------------------------------------------------------------------------------------------------------------
+Parameters generated by constraints
+
+ name  :          0::A0          1::A0
+ value :        0.15868        0.05636
+ sig   :        0.00004        0.00001 
+
+ Phases:
+ Result for phase: MgBC.fixed
+=======================================================================================================================================
+ Reciprocal metric tensor: 
+  names :            A11            A22            A33            A12            A13            A23
+  values:    0.158683845    0.158683845    0.076435903    0.158683845    0.000000000    0.000000000
+  esds  :    0.000035136                   0.000012989                                             
+ New unit cell:
+  names :           a           b           c       alpha        beta       gamma      Volume
+  values:    2.898698    2.898698    3.617023     90.0000     90.0000    120.0000      26.320
+  esds  :    0.000535                0.000307                                           0.007
+
+ Atoms:
+   name      x         y         z      frac   Uiso     U11     U22     U33     U12     U13     U23
+---------------------------------------------------------------------------------------------------------------------------------------
+    Mg0     Mg:
+ values:   0.00000   0.00000   0.00000   1.000 0.00000
+ sig   :                                               
+     B1      B:
+ values:   0.66667   0.33333   0.50000   1.000 0.00000
+ sig   :                                               
+     C2      C:
+ values:   0.33333   0.66667   0.50000   1.000 0.00000
+ sig   :                                               
+
+ Density: 2.9732 g/cm**3
+ Result for phase: MgO.fixed
+=======================================================================================================================================
+ Reciprocal metric tensor: 
+  names :            A11            A22            A33            A12            A13            A23
+  values:    0.056359607    0.056359607    0.056359607    0.000000000    0.000000000    0.000000000
+  esds  :    0.000009943                                                                           
+ New unit cell:
+  names :           a           b           c       alpha        beta       gamma      Volume
+  values:    4.212268    4.212268    4.212268     90.0000     90.0000     90.0000      74.739
+  esds  :    0.000372                                                                   0.020
+
+ Atoms:
+   name      x         y         z      frac   Uiso     U11     U22     U33     U12     U13     U23
+---------------------------------------------------------------------------------------------------------------------------------------
+    Mg1   Mg+2:
+ values:   0.00000   0.00000   0.00000   1.000 0.00395
+ sig   :                                               
+     O1    O-2:
+ values:   0.50000   0.50000   0.50000   1.000 0.00458
+ sig   :                                               
+
+ Density: 3.5819 g/cm**3
+
+ Phase: MgBC.fixed in histogram: PWDR h3_d1_120s_0p5mm_001_exported_exported.xy
+=======================================================================================================================================
+ Final refinement RF, RF^2 = 11.02%, 29.15% on 6 reflections
+ Durbin-Watson statistic = 0.012
+ Bragg intensity sum = 110
+ Phase fraction  :    0.42573, sig   0.006703 Weight fraction  :  0.18918, sig    0.00249
+
+ Size model:     isotropic equatorial:     0.00100, sig:7468852.0637 LG mix coeff.:      1.0000
+
+ Mustrain model:  uniaxial
+ equatorial:     -1583.0, sig:   877.6 axial:     -2593.2, sig:  1008.7 LG mix coeff.:      1.0000
+
+ Phase: MgO.fixed in histogram: PWDR h3_d1_120s_0p5mm_001_exported_exported.xy
+=======================================================================================================================================
+ Final refinement RF, RF^2 = 11.10%, 22.67% on 3 reflections
+ Durbin-Watson statistic = 0.012
+ Bragg intensity sum = 574
+ Phase fraction  :    0.53338, sig  0.0026099 Weight fraction  :  0.81082, sig    0.00249
+
+ Size model:     isotropic equatorial:     0.00100, sig:18171134.6179 LG mix coeff.:      1.0000
+
+ Mustrain model:  uniaxial
+ equatorial:     -4473.1, sig:   643.8 axial:     -9766.0, sig: 14075.2 LG mix coeff.:      1.0000
+
+ Histogram: PWDR h3_d1_120s_0p5mm_001_exported_exported.xy histogram Id: 0
+=======================================================================================================================================
+ PWDR histogram weight factor = 1.000
+ Final refinement wR = 14.17% on 8001 observations in this histogram
+ Other residuals: R = 10.12%, R-bkg = 19.48%, wR-bkg = 14.17% wRmin = 100.00%
+ Instrument type: Debye-Scherrer
+
+ Resonant form factors:(ref: D.T. Cromer & D.A. Liberman (1981), Acta Cryst. A37, 267-268.)
+ Element:       Mg        B        C     Mg+2      O-2
+ f'     :    0.172    0.009    0.018    0.172    0.049
+ f"     :    0.177    0.004    0.009    0.177    0.032
+
+ Sample Parameters:
+ names :         Scale    Absorption     DisplaceX     DisplaceY
+ values:        1.0000        0.0000      267.2339        0.0000
+ sig   :                                   18.7801              
+
+ Instrument Parameters:
+ names :         Lam    Polariz.        SH/L           U           V           W           X           Y           Z
+ value :    1.540500    0.400000    0.002000  486.542767 -223.479529   68.219536    0.000000    0.000000    0.000000
+ sig   :                                      148.945670  143.068444   33.974797                                    
+
+ Instrument Parameters:
+ names :        Zero
+ value :    0.000000
+ sig   :            
+
+ Background function: chebyschev-1
+ value :     0.6165   -0.3119   0.07435 -0.007019  -0.01696  -0.01415
+ sig   :   0.001423  0.002423  0.002208  0.002164  0.001896  0.001857
+ Background sums: empirical 4.74e+03, Debye 0, peaks 0, Total 4.74e+03

@@ -1,0 +1,126 @@
+{
+  "pattern": "/home/javierrojas/AI Work/Auto XRD Fitting/Data/MgO+MgBC/h3_d1_120s_0p5mm_001_exported_exported.xy",
+  "instprm": "/home/javierrojas/AI Work/Auto XRD Fitting/Data/MgO+MgBC/D8_parameter-1.prm",
+  "phases": [
+    "/home/javierrojas/AI Work/Auto XRD Fitting/Data/MgO+MgBC/MgBC.fixed.cif",
+    "/home/javierrojas/AI Work/Auto XRD Fitting/Data/MgO+MgBC/MgO.fixed.cif"
+  ],
+  "stages": [
+    {
+      "name": "background_scale",
+      "status": "ok",
+      "rwp_before": 100.0,
+      "rwp_after": 27.216203203991597,
+      "detail": "",
+      "optional": false
+    },
+    {
+      "name": "sample_displacement",
+      "status": "ok",
+      "rwp_before": 27.216203203991597,
+      "rwp_after": 27.215199005061258,
+      "detail": "",
+      "optional": false
+    },
+    {
+      "name": "unit_cell",
+      "status": "ok",
+      "rwp_before": 27.215199005061258,
+      "rwp_after": 27.204917599313283,
+      "detail": "",
+      "optional": false
+    },
+    {
+      "name": "profile_instrument",
+      "status": "ok",
+      "rwp_before": 27.204917599313283,
+      "rwp_after": 18.362545143833817,
+      "detail": "",
+      "optional": false
+    },
+    {
+      "name": "profile_microstrain_size",
+      "status": "ok",
+      "rwp_before": 18.362545143833817,
+      "rwp_after": 14.243835869852765,
+      "detail": "used fallback 'isotropic_mustrain'",
+      "optional": false
+    },
+    {
+      "name": "preferred_orientation",
+      "status": "failed_bounds",
+      "rwp_before": 14.243835869852765,
+      "rwp_after": 23.651448250556147,
+      "detail": "",
+      "optional": true
+    },
+    {
+      "name": "atoms",
+      "status": "failed_bounds",
+      "rwp_before": 14.243835869852765,
+      "rwp_after": 29.021697923998435,
+      "detail": "",
+      "optional": true
+    }
+  ],
+  "final_rwp": 14.243835869852765,
+  "fit_quality": {
+    "calc_obs_correlation": 0.9522947086980839,
+    "needs_review": false,
+    "reason": ""
+  },
+  "cells": {
+    "MgBC.fixed": {
+      "length_a": 2.899684963260746,
+      "length_b": 2.8996849632607455,
+      "length_c": 3.6185125793115533,
+      "angle_alpha": 90.0,
+      "angle_beta": 90.0,
+      "angle_gamma": 120.00000000000001,
+      "volume": 26.3488916358374
+    },
+    "MgO.fixed": {
+      "length_a": 4.214014608973525,
+      "length_b": 4.214014608973525,
+      "length_c": 4.214014608973525,
+      "angle_alpha": 90.0,
+      "angle_beta": 90.0,
+      "angle_gamma": 90.0,
+      "volume": 74.83213061621292
+    }
+  },
+  "cell_esds": {
+    "MgBC.fixed": {
+      "length_a": 0.0004970051530634891,
+      "length_b": 0.0004970051603056581,
+      "length_c": 0.0005367561669963496,
+      "angle_alpha": 0.0,
+      "angle_beta": 0.0,
+      "angle_gamma": 0.0,
+      "volume": 0.004678292090857448
+    },
+    "MgO.fixed": {
+      "length_a": 0.000165445735198228,
+      "length_b": 0.000165445735198228,
+      "length_c": 0.000165445735198228,
+      "angle_alpha": 0.0,
+      "angle_beta": 0.0,
+      "angle_gamma": 0.0,
+      "volume": 0.008813915705490252
+    }
+  },
+  "limits_full_range": [
+    3.875,
+    95.9999979408458
+  ],
+  "limits_applied": [
+    3.875,
+    95.9999979408458
+  ],
+  "pattern_raw_csv": "/home/javierrojas/AI Work/Auto XRD Fitting/Data/MgO+MgBC/results_20260828_152558/pattern_raw.csv",
+  "fit_final_csv": "/home/javierrojas/AI Work/Auto XRD Fitting/Data/MgO+MgBC/results_20260828_152558/fit_final.csv",
+  "refined_cifs": [
+    "/home/javierrojas/AI Work/Auto XRD Fitting/Data/MgO+MgBC/results_20260828_152558/refined_phase_0_MgBC.fixed.cif",
+    "/home/javierrojas/AI Work/Auto XRD Fitting/Data/MgO+MgBC/results_20260828_152558/refined_phase_1_MgO.fixed.cif"
+  ]
+}

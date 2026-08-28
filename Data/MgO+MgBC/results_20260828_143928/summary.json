@@ -1,0 +1,100 @@
+{
+  "pattern": "/home/javierrojas/AI Work/Auto XRD Fitting/Data/MgO+MgBC/h3_d1_120s_0p5mm_001_exported_exported.xy",
+  "instprm": "/home/javierrojas/AI Work/Auto XRD Fitting/Data/MgO+MgBC/D8_parameter-1.prm",
+  "phases": [
+    "/home/javierrojas/AI Work/Auto XRD Fitting/Data/MgO+MgBC/MgBC.fixed.cif",
+    "/home/javierrojas/AI Work/Auto XRD Fitting/Data/MgO+MgBC/MgO.fixed.cif"
+  ],
+  "stages": [
+    {
+      "name": "background_scale",
+      "status": "ok",
+      "rwp_before": NaN,
+      "rwp_after": 33.93198660393299,
+      "detail": ""
+    },
+    {
+      "name": "sample_displacement",
+      "status": "ok",
+      "rwp_before": 33.93198660393299,
+      "rwp_after": 33.929591959573216,
+      "detail": ""
+    },
+    {
+      "name": "unit_cell",
+      "status": "ok",
+      "rwp_before": 33.929591959573216,
+      "rwp_after": 33.91935226487108,
+      "detail": ""
+    },
+    {
+      "name": "profile_instrument",
+      "status": "ok",
+      "rwp_before": 33.91935226487108,
+      "rwp_after": 19.907134996507615,
+      "detail": ""
+    },
+    {
+      "name": "profile_microstrain_size",
+      "status": "ok",
+      "rwp_before": 19.907134996507615,
+      "rwp_after": 14.172199994248997,
+      "detail": ""
+    }
+  ],
+  "final_rwp": 14.172199994248997,
+  "cells": {
+    "MgBC.fixed": {
+      "length_a": 2.898698269025572,
+      "length_b": 2.8986982690255716,
+      "length_c": 3.617023246298792,
+      "angle_alpha": 90.0,
+      "angle_beta": 90.0,
+      "angle_gamma": 120.00000000000001,
+      "volume": 26.320125392995124
+    },
+    "MgO.fixed": {
+      "length_a": 4.212268256299405,
+      "length_b": 4.212268256299405,
+      "length_c": 4.212268256299405,
+      "angle_alpha": 90.0,
+      "angle_beta": 90.0,
+      "angle_gamma": 90.0,
+      "volume": 74.73913439728018
+    }
+  },
+  "cell_esds": {
+    "MgBC.fixed": {
+      "length_a": 0.0005348577981675061,
+      "length_b": 0.0005348577981675061,
+      "length_c": 0.000307316690603066,
+      "angle_alpha": 0.0,
+      "angle_beta": 0.0,
+      "angle_gamma": 0.0,
+      "volume": 0.006891199183848125
+    },
+    "MgO.fixed": {
+      "length_a": 0.0003715482691814825,
+      "length_b": 0.0003715482691814825,
+      "length_c": 0.0003715482691814825,
+      "angle_alpha": 0.0,
+      "angle_beta": 0.0,
+      "angle_gamma": 0.0,
+      "volume": 0.019777369551520634
+    }
+  },
+  "limits_full_range": [
+    3.875,
+    95.9999979408458
+  ],
+  "limits_applied": [
+    30.0,
+    70.0
+  ],
+  "pattern_raw_csv": "/home/javierrojas/AI Work/Auto XRD Fitting/Data/MgO+MgBC/results_20260828_143928/pattern_raw.csv",
+  "fit_final_csv": "/home/javierrojas/AI Work/Auto XRD Fitting/Data/MgO+MgBC/results_20260828_143928/fit_final.csv",
+  "refined_cifs": [
+    "/home/javierrojas/AI Work/Auto XRD Fitting/Data/MgO+MgBC/results_20260828_143928/refined_phase_0_MgBC.fixed.cif",
+    "/home/javierrojas/AI Work/Auto XRD Fitting/Data/MgO+MgBC/results_20260828_143928/refined_phase_1_MgO.fixed.cif"
+  ]
+}

@@ -1,0 +1,80 @@
+{
+  "pattern": "/home/javierrojas/AI Work/Auto XRD Fitting/Data/FeF3/r3c 20.txt",
+  "instprm": "/home/javierrojas/AI Work/Auto XRD Fitting/Data/FeF3/ws2.cu.prm",
+  "phases": [
+    "/home/javierrojas/AI Work/Auto XRD Fitting/Data/FeF3/fef3_r3c_ambient.cif"
+  ],
+  "stages": [
+    {
+      "name": "background_scale",
+      "status": "ok",
+      "rwp_before": NaN,
+      "rwp_after": 8.881938796742732,
+      "detail": ""
+    },
+    {
+      "name": "sample_displacement",
+      "status": "ok",
+      "rwp_before": 8.881938796742732,
+      "rwp_after": 8.881938796742732,
+      "detail": ""
+    },
+    {
+      "name": "unit_cell",
+      "status": "ok",
+      "rwp_before": 8.881938796742732,
+      "rwp_after": 7.9655652385741735,
+      "detail": ""
+    },
+    {
+      "name": "profile_instrument",
+      "status": "ok",
+      "rwp_before": 7.9655652385741735,
+      "rwp_after": 6.377057274633118,
+      "detail": ""
+    },
+    {
+      "name": "profile_microstrain_size",
+      "status": "ok",
+      "rwp_before": 6.377057274633118,
+      "rwp_after": 6.389172584591339,
+      "detail": ""
+    }
+  ],
+  "final_rwp": 6.389172584591339,
+  "cells": {
+    "fef3_r3c_ambient": {
+      "length_a": 5.161521807262478,
+      "length_b": 5.161521807262478,
+      "length_c": 13.317645666199676,
+      "angle_alpha": 90.0,
+      "angle_beta": 90.0,
+      "angle_gamma": 119.99999999999999,
+      "volume": 307.2653729719149
+    }
+  },
+  "cell_esds": {
+    "fef3_r3c_ambient": {
+      "length_a": 0.0009741130084301314,
+      "length_b": 0.0009741130084301314,
+      "length_c": 0.0028468099039418017,
+      "angle_alpha": 0.0,
+      "angle_beta": 0.0,
+      "angle_gamma": 0.0,
+      "volume": 0.03342625257613782
+    }
+  },
+  "limits_full_range": [
+    5.0,
+    80.0
+  ],
+  "limits_applied": [
+    20.0,
+    80.0
+  ],
+  "pattern_raw_csv": "/home/javierrojas/AI Work/Auto XRD Fitting/Data/FeF3/results_20260828_143823/pattern_raw.csv",
+  "fit_final_csv": "/home/javierrojas/AI Work/Auto XRD Fitting/Data/FeF3/results_20260828_143823/fit_final.csv",
+  "refined_cifs": [
+    "/home/javierrojas/AI Work/Auto XRD Fitting/Data/FeF3/results_20260828_143823/refined_phase_0_fef3_r3c_ambient.cif"
+  ]
+}

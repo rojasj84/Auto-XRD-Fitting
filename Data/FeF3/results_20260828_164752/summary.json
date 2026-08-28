@@ -1,0 +1,114 @@
+{
+  "pattern": "/home/javierrojas/AI Work/Auto XRD Fitting/Data/FeF3/r3c 20.txt",
+  "instprm": "/home/javierrojas/AI Work/Auto XRD Fitting/Data/FeF3/ws2.cu.prm",
+  "phases": [
+    "/home/javierrojas/AI Work/Auto XRD Fitting/Data/FeF3/results_20260828_164114_sweep/candidate_1/refined_phase_0_refined_phase_0_fef3_r3c_ambient.cif"
+  ],
+  "stages": [
+    {
+      "name": "background_scale",
+      "status": "ok",
+      "rwp_before": 99.97605873168376,
+      "rwp_after": 7.756881734177125,
+      "detail": "",
+      "optional": false
+    },
+    {
+      "name": "sample_displacement",
+      "status": "ok",
+      "rwp_before": 7.756881734177125,
+      "rwp_after": 7.756881734177125,
+      "detail": "",
+      "optional": false
+    },
+    {
+      "name": "unit_cell",
+      "status": "ok",
+      "rwp_before": 7.756881734177125,
+      "rwp_after": 7.557380172053639,
+      "detail": "",
+      "optional": false
+    },
+    {
+      "name": "profile_instrument",
+      "status": "ok",
+      "rwp_before": 7.557380172053639,
+      "rwp_after": 6.094229410152745,
+      "detail": "",
+      "optional": false
+    },
+    {
+      "name": "peak_asymmetry",
+      "status": "failed_bounds",
+      "rwp_before": 6.094229410152745,
+      "rwp_after": 6.093407838311177,
+      "detail": "",
+      "optional": true
+    },
+    {
+      "name": "profile_microstrain_size",
+      "status": "ok",
+      "rwp_before": 6.094229410152745,
+      "rwp_after": 6.063145040748575,
+      "detail": "",
+      "optional": false
+    },
+    {
+      "name": "extinction",
+      "status": "failed_bounds",
+      "rwp_before": 6.063145040748575,
+      "rwp_after": 6.199220987552069,
+      "detail": "",
+      "optional": true
+    },
+    {
+      "name": "preferred_orientation",
+      "status": "failed_bounds",
+      "rwp_before": 6.063145040748575,
+      "rwp_after": 6.075607072361634,
+      "detail": "",
+      "optional": true
+    }
+  ],
+  "final_rwp": 6.063145040748575,
+  "fit_quality": {
+    "calc_obs_correlation": 0.9363142098751064,
+    "needs_review": false,
+    "reason": ""
+  },
+  "cells": {
+    "refined_phase_0_refined_phase_0_fef3_r3c_ambient": {
+      "length_a": 5.161293267334555,
+      "length_b": 5.161293267334555,
+      "length_c": 13.318730156667321,
+      "angle_alpha": 90.0,
+      "angle_beta": 90.0,
+      "angle_gamma": 120.00000000000001,
+      "volume": 307.26318281373057
+    }
+  },
+  "cell_esds": {
+    "refined_phase_0_refined_phase_0_fef3_r3c_ambient": {
+      "length_a": 0.0009485358473076065,
+      "length_b": 0.0009485358473076065,
+      "length_c": 0.002796564076773358,
+      "angle_alpha": 0.0,
+      "angle_beta": 0.0,
+      "angle_gamma": 0.0,
+      "volume": 0.03200281519116375
+    }
+  },
+  "limits_full_range": [
+    5.0,
+    80.0
+  ],
+  "limits_applied": [
+    5.0,
+    80.0
+  ],
+  "pattern_raw_csv": "/home/javierrojas/AI Work/Auto XRD Fitting/Data/FeF3/results_20260828_164752/pattern_raw.csv",
+  "fit_final_csv": "/home/javierrojas/AI Work/Auto XRD Fitting/Data/FeF3/results_20260828_164752/fit_final.csv",
+  "refined_cifs": [
+    "/home/javierrojas/AI Work/Auto XRD Fitting/Data/FeF3/results_20260828_164752/refined_phase_0_refined_phase_0_refined_phase_0_fef3_r3c_ambient.cif"
+  ]
+}

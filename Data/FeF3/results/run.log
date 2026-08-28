@@ -1,0 +1,5 @@
+  [background_scale] ok (Rwp nan -> 10.613)
+  [sample_displacement] ok (Rwp 10.613 -> 10.613)
+  [unit_cell] failed bounds check (Rwp 10.613 -> 10.613) — reverting to checkpoint
+  [profile_instrument] failed bounds check (Rwp 10.613 -> 10.613) — reverting to checkpoint
+  [profile_microstrain_size] failed bounds check (Rwp 10.613 -> 10.612) — reverting to checkpoint

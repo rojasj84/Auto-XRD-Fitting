@@ -1,0 +1,134 @@
+{
+  "pattern": "/home/javierrojas/AI Work/Auto XRD Fitting/Data/MgO+MgBC/h3_d1_120s_0p5mm_001_exported_exported.xy",
+  "instprm": "/home/javierrojas/AI Work/Auto XRD Fitting/Data/MgO+MgBC/D8_parameter-1.prm",
+  "phases": [
+    "/home/javierrojas/AI Work/Auto XRD Fitting/Data/MgO+MgBC/results_20260828_164308/refined_phase_0_MgBC.fixed.cif",
+    "/home/javierrojas/AI Work/Auto XRD Fitting/Data/MgO+MgBC/results_20260828_164308/refined_phase_1_MgO.fixed.cif"
+  ],
+  "stages": [
+    {
+      "name": "background_scale",
+      "status": "ok",
+      "rwp_before": 100.0,
+      "rwp_after": 27.680774009927866,
+      "detail": "",
+      "optional": false
+    },
+    {
+      "name": "sample_displacement",
+      "status": "ok",
+      "rwp_before": 27.680774009927866,
+      "rwp_after": 27.605803732480698,
+      "detail": "",
+      "optional": false
+    },
+    {
+      "name": "unit_cell",
+      "status": "ok",
+      "rwp_before": 27.605803732480698,
+      "rwp_after": 27.52436382074222,
+      "detail": "",
+      "optional": false
+    },
+    {
+      "name": "profile_instrument",
+      "status": "ok",
+      "rwp_before": 27.52436382074222,
+      "rwp_after": 18.337635579248865,
+      "detail": "",
+      "optional": false
+    },
+    {
+      "name": "peak_asymmetry",
+      "status": "ok",
+      "rwp_before": 18.337635579248865,
+      "rwp_after": 14.084648726320099,
+      "detail": "",
+      "optional": true
+    },
+    {
+      "name": "profile_microstrain_size",
+      "status": "ok",
+      "rwp_before": 14.084648726320099,
+      "rwp_after": 13.889247689228846,
+      "detail": "",
+      "optional": false
+    },
+    {
+      "name": "extinction",
+      "status": "failed_bounds",
+      "rwp_before": 13.889247689228846,
+      "rwp_after": 14.401840528252286,
+      "detail": "",
+      "optional": true
+    },
+    {
+      "name": "preferred_orientation",
+      "status": "failed_bounds",
+      "rwp_before": 13.889247689228846,
+      "rwp_after": 100.0,
+      "detail": "",
+      "optional": true
+    }
+  ],
+  "final_rwp": 13.889247689228846,
+  "fit_quality": {
+    "calc_obs_correlation": 0.9576682692510746,
+    "needs_review": false,
+    "reason": ""
+  },
+  "cells": {
+    "refined_phase_0_MgBC.fixed": {
+      "length_a": 2.898740591052722,
+      "length_b": 2.898740591052722,
+      "length_c": 3.618195854456857,
+      "angle_alpha": 90.0,
+      "angle_beta": 90.0,
+      "angle_gamma": 119.99999999999999,
+      "volume": 26.329426974866745
+    },
+    "refined_phase_1_MgO.fixed": {
+      "length_a": 4.212471594295121,
+      "length_b": 4.212471594295121,
+      "length_c": 4.212471594295121,
+      "angle_alpha": 90.0,
+      "angle_beta": 90.0,
+      "angle_gamma": 90.0,
+      "volume": 74.74995852230757
+    }
+  },
+  "cell_esds": {
+    "refined_phase_0_MgBC.fixed": {
+      "length_a": 0.0005100758505692331,
+      "length_b": 0.0005100758505692331,
+      "length_c": 0.0005138965242693085,
+      "angle_alpha": 0.0,
+      "angle_beta": 0.0,
+      "angle_gamma": 0.0,
+      "volume": 0.005154033943257793
+    },
+    "refined_phase_1_MgO.fixed": {
+      "length_a": 0.0002243002655490242,
+      "length_b": 0.0002243002655490242,
+      "length_c": 0.0002243002655490242,
+      "angle_alpha": 0.0,
+      "angle_beta": 0.0,
+      "angle_gamma": 0.0,
+      "volume": 0.011940568468434717
+    }
+  },
+  "limits_full_range": [
+    3.875,
+    95.9999979408458
+  ],
+  "limits_applied": [
+    3.875,
+    95.9999979408458
+  ],
+  "pattern_raw_csv": "/home/javierrojas/AI Work/Auto XRD Fitting/Data/MgO+MgBC/results_20260828_164400_sweep/candidate_1/pattern_raw.csv",
+  "fit_final_csv": "/home/javierrojas/AI Work/Auto XRD Fitting/Data/MgO+MgBC/results_20260828_164400_sweep/candidate_1/fit_final.csv",
+  "refined_cifs": [
+    "/home/javierrojas/AI Work/Auto XRD Fitting/Data/MgO+MgBC/results_20260828_164400_sweep/candidate_1/refined_phase_0_refined_phase_0_MgBC.fixed.cif",
+    "/home/javierrojas/AI Work/Auto XRD Fitting/Data/MgO+MgBC/results_20260828_164400_sweep/candidate_1/refined_phase_1_refined_phase_1_MgO.fixed.cif"
+  ]
+}

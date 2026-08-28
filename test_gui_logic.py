@@ -205,6 +205,57 @@ def test_find_example_datasets():
           logic.find_example_datasets(tempfile.mkdtemp()) == {})
 
 
+def test_scan_dataset_subfolders_strict_mode():
+    """
+    Regression coverage for gsas2_batch_run_logic's discovery needs:
+    strict=True must flag an ambiguous subfolder (more than one
+    candidate pattern or instprm file) rather than silently guessing —
+    confirmed as a real, not just theoretical, concern: this project's
+    own Data/FeF3 folder accumulated a second .prm file over the course
+    of development and would have been silently mis-resolved by the
+    lenient (strict=False) behavior alone. strict=False (used by
+    find_example_datasets(), the GUI's "Load example" picker) must keep
+    tolerating that — a human sees what loaded there and can fix it.
+    """
+    with tempfile.TemporaryDirectory() as tmp:
+        tmp = Path(tmp)
+
+        clean = tmp / "Clean"
+        clean.mkdir()
+        (clean / "pattern.xy").write_text("x")
+        (clean / "inst.prm").write_text("x")
+        (clean / "phase.cif").write_text("x")
+
+        ambiguous = tmp / "Ambiguous"
+        ambiguous.mkdir()
+        (ambiguous / "pattern.xy").write_text("x")
+        (ambiguous / "inst_a.prm").write_text("x")
+        (ambiguous / "inst_b.prm").write_text("x")
+        (ambiguous / "phase.cif").write_text("x")
+
+        multiphase = tmp / "MultiPhase"
+        multiphase.mkdir()
+        (multiphase / "pattern.xy").write_text("x")
+        (multiphase / "inst.prm").write_text("x")
+        (multiphase / "phase_a.cif").write_text("x")
+        (multiphase / "phase_b.cif").write_text("x")
+
+        found_lenient, skipped_lenient = logic.scan_dataset_subfolders(str(tmp), strict=False)
+        check("lenient mode resolves the ambiguous folder anyway (picks one)",
+              "Ambiguous" in found_lenient)
+        check("lenient mode reports nothing skipped for a folder with an attempt",
+              "Ambiguous" not in skipped_lenient)
+
+        found_strict, skipped_strict = logic.scan_dataset_subfolders(str(tmp), strict=True)
+        check("strict mode still finds the clean folder", "Clean" in found_strict)
+        check("strict mode still allows multiple CIFs (multi-phase, not ambiguous)",
+              "MultiPhase" in found_strict and len(found_strict["MultiPhase"]["cifs"]) == 2)
+        check("strict mode skips the ambiguous folder instead of guessing",
+              "Ambiguous" in skipped_strict and "Ambiguous" not in found_strict)
+        check("strict mode's skip reason names what was ambiguous",
+              "instrument-parameter" in skipped_strict["Ambiguous"])
+
+
 def test_read_xy_csv():
     with tempfile.TemporaryDirectory() as tmp:
         p = Path(tmp) / "pattern_raw.csv"
@@ -265,6 +316,7 @@ if __name__ == "__main__":
     test_config_round_trip()
     test_auto_outdir()
     test_find_example_datasets()
+    test_scan_dataset_subfolders_strict_mode()
     test_read_xy_csv()
     test_read_summary()
     test_format_cell_rows()

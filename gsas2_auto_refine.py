@@ -160,6 +160,14 @@ class Stage:
     # no scriptable setter), so RefinementRunner._attempt_variant pokes it
     # directly into each phase's HAP data instead.
     pref_ori_axis: tuple = None
+    # When set, pref_ori_axis and set_hap["Pref.Ori."] apply to ONLY this
+    # phase index, not every phase — see build_protocol()'s
+    # _pref_ori_fallbacks() for why: confirmed on real two-phase data
+    # (Data/MgO+MgBC) that forcing the same texture axis onto every phase
+    # at once made Rwp much worse for every candidate axis (12.4% ->
+    # 27.3%), because two phases' real textures don't have to match —
+    # MgO (cubic) and MgBC don't even share a crystal system.
+    pref_ori_phase_index: int = None
     # HAP refinement flags to explicitly turn OFF (via G2Phase.
     # clear_HAP_refinements()) before applying set_hap/set_hist/set_phase
     # — see build_protocol()'s atoms-stage fallbacks. Every stage in this
@@ -180,7 +188,47 @@ class Stage:
     clear_hap: dict = field(default_factory=dict)
 
 
-def build_protocol(refine_atoms: bool, lebail: bool = False) -> list:
+# Low-index axes real single-phase textures most often align with — see
+# _pref_ori_fallbacks().
+_PREF_ORI_AXES = [(0, 0, 1), (1, 0, 0), (0, 1, 0), (1, 1, 0), (1, 1, 1)]
+
+
+def _pref_ori_fallbacks(n_phases: int) -> list:
+    """
+    Builds the preferred_orientation stage's fallback ladder: first every
+    candidate axis applied to every phase at once (the stage's own
+    pref_ori_axis=(0,0,1) is the primary attempt — this list starts from
+    the second axis), then — only for multi-phase samples — the same
+    axes tried on ONE phase at a time.
+
+    The per-phase fallbacks matter: confirmed on real two-phase data
+    (Data/MgO+MgBC) that forcing the *same* texture axis onto every phase
+    simultaneously made Rwp much worse for every single candidate axis
+    (12.4% -> as high as 27.3%), because two phases' real textures (if
+    they have any at all) don't have to match, or even exist in both —
+    MgO (cubic rock salt) and MgBC don't share a crystal system, let
+    alone a preferred texture direction. Trying each phase independently
+    lets the ladder find "phase A is textured, phase B isn't" instead of
+    only ever being able to accept or reject "both are textured the same
+    way."
+    """
+    fallbacks = [
+        Stage(name=f"pref_ori_{a}{b}{c}", pref_ori_axis=(a, b, c), set_hap={"Pref.Ori.": True})
+        for a, b, c in _PREF_ORI_AXES[1:]  # [0] is the stage's own primary config
+    ]
+    if n_phases > 1:
+        for phase_index in range(n_phases):
+            for a, b, c in _PREF_ORI_AXES:
+                fallbacks.append(Stage(
+                    name=f"pref_ori_phase{phase_index}_{a}{b}{c}",
+                    pref_ori_axis=(a, b, c),
+                    pref_ori_phase_index=phase_index,
+                    set_hap={"Pref.Ori.": True},
+                ))
+    return fallbacks
+
+
+def build_protocol(refine_atoms: bool, lebail: bool = False, n_phases: int = 1) -> list:
     """
     lebail: when True, each stage's HAP dict skips "Scale" (phase-fraction
     scale factor). This is for --lebail runs, where GSAS-II extracts each
@@ -194,6 +242,12 @@ def build_protocol(refine_atoms: bool, lebail: bool = False) -> list:
     testing this pipeline against real data with LeBail on: leaving Scale
     on alongside it reproduced the same SVD-singularity/nonsense-shift
     signature.
+
+    n_phases: how many phase CIFs this run will load (len(args.cif) in
+    main() — known before any GSAS-II interaction). Only affects the
+    preferred_orientation stage's fallback ladder — see
+    _pref_ori_fallbacks() for why multi-phase samples need per-phase
+    texture-axis attempts, not just one shared axis across every phase.
     """
     stages = [
         Stage(
@@ -380,12 +434,7 @@ def build_protocol(refine_atoms: bool, lebail: bool = False) -> list:
             # run.
             pref_ori_axis=(0, 0, 1),
             set_hap={"Pref.Ori.": True},
-            fallbacks=[
-                Stage(name="pref_ori_100", pref_ori_axis=(1, 0, 0), set_hap={"Pref.Ori.": True}),
-                Stage(name="pref_ori_010", pref_ori_axis=(0, 1, 0), set_hap={"Pref.Ori.": True}),
-                Stage(name="pref_ori_110", pref_ori_axis=(1, 1, 0), set_hap={"Pref.Ori.": True}),
-                Stage(name="pref_ori_111", pref_ori_axis=(1, 1, 1), set_hap={"Pref.Ori.": True}),
-            ],
+            fallbacks=_pref_ori_fallbacks(n_phases),
         ),
     ]
     if refine_atoms:
@@ -821,12 +870,23 @@ class RefinementRunner:
         axis) typically doesn't make Rwp worse either, it just settles
         back to a no-op value."""
         try:
+            # Pref.Ori. targeting: every phase by default, or just one —
+            # see Stage.pref_ori_phase_index's docstring. Only affects
+            # the axis poke and set_hap below, never set_hist/set_phase
+            # (those apply to every phase/histogram regardless, same as
+            # any other stage).
+            pref_ori_phases = (
+                [self.gpx.phase(stage.pref_ori_phase_index)]
+                if stage.pref_ori_phase_index is not None
+                else list(self.gpx.phases())
+            )
+
             if stage.pref_ori_axis is not None:
                 # Not one of set_HAP_refinements()'s recognized keys — see
                 # Stage.pref_ori_axis's docstring — so poke the axis in
                 # directly before turning the refine flag on below.
                 hist_name = self.gpx.histogram(0).name
-                for p in self.gpx.phases():
+                for p in pref_ori_phases:
                     p.data["Histograms"][hist_name]["Pref.Ori."][3] = list(stage.pref_ori_axis)
             if stage.clear_hap:
                 # Applied before set_hap/set_hist/set_phase below — see
@@ -840,7 +900,8 @@ class RefinementRunner:
                 for p in self.gpx.phases():
                     p.set_refinements(stage.set_phase)
             if stage.set_hap:
-                for p in self.gpx.phases():
+                target_phases = pref_ori_phases if "Pref.Ori." in stage.set_hap else self.gpx.phases()
+                for p in target_phases:
                     p.set_HAP_refinements(stage.set_hap)
 
             solver_output = io.StringIO()
@@ -1131,7 +1192,7 @@ def print_plan(args, stages: list, emit=None):
 
 def main(argv=None):
     args = parse_args(argv)
-    stages = build_protocol(args.refine_atoms, lebail=args.lebail)
+    stages = build_protocol(args.refine_atoms, lebail=args.lebail, n_phases=len(args.cif))
 
     problems = check_inputs_exist(args)
     if (args.tmin is None) != (args.tmax is None):

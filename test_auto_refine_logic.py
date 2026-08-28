@@ -35,6 +35,7 @@ from gsas2_auto_refine import (  # noqa: E402
     profile_params_sane,
     rwp_improved_or_stable,
     seed_initial_scale,
+    _pref_ori_fallbacks,
 )
 
 
@@ -349,6 +350,53 @@ class PrefOriFakeProject(FakeProject):
             self.rwp -= 3.0       # the real texture axis: genuine improvement
         else:
             self.rwp -= 0.0001    # no real effect, same as a no-op axis
+        if self.filename is not None:
+            self._write_state_to(self.filename)
+
+
+class MultiPhasePrefOriFakePhase(PrefOriFakePhase):
+    """Extends PrefOriFakePhase to also record whether *this* phase had
+    Pref.Ori. actually turned on for the current attempt — lets a test
+    tell "both phases were targeted" apart from "just this one" (see
+    RefinementRunner._attempt_variant's pref_ori_phases targeting)."""
+
+    def __init__(self, name, cell, hist_name):
+        super().__init__(name, cell, hist_name)
+        self.pref_ori_refine_set = False
+
+    def set_HAP_refinements(self, d):
+        if "Pref.Ori." in d:
+            self.pref_ori_refine_set = True
+
+
+class MultiPhasePrefOriFakeProject(FakeProject):
+    """
+    Regression coverage for _pref_ori_fallbacks()'s per-phase targeting
+    — the real bug found on real two-phase data (Data/MgO+MgBC): forcing
+    the *same* texture axis onto both phases at once made Rwp much worse
+    for every candidate axis (12.4% -> as high as 27.3%), even though
+    (as this test models) phase 1 alone has a real texture along
+    (1,1,0). Every "both phases" attempt should fail here — matching
+    real data — and only a phase-1-only, axis-(1,1,0) attempt should
+    succeed.
+    """
+
+    def __init__(self, rwp, phase_cells, hist_name="fake hist"):
+        super().__init__(rwp, phase_cells)
+        self._hists = [ProfileFakeHist(self, name=hist_name)]
+        self._phases = [MultiPhasePrefOriFakePhase(f"phase{i}", c, hist_name)
+                         for i, c in enumerate(phase_cells)]
+
+    def do_refinements(self, reflist):
+        hist_name = self._hists[0].name
+        active = [i for i, p in enumerate(self._phases) if p.pref_ori_refine_set]
+        axis1 = tuple(self._phases[1].data["Histograms"][hist_name]["Pref.Ori."][3])
+        if active == [1] and axis1 == (1, 1, 0):
+            self.rwp -= 3.0    # phase 1 alone, the real texture axis: genuine improvement
+        elif len(active) >= 2:
+            self.rwp += 10.0   # forcing both phases at once: makes it worse, like real data
+        else:
+            self.rwp -= 0.0001  # any other single-phase/axis combo: no real effect
         if self.filename is not None:
             self._write_state_to(self.filename)
 
@@ -912,6 +960,55 @@ def test_runner_finds_correct_preferred_orientation_axis():
               "pref_ori_110" in result.detail)
 
 
+def test_pref_ori_fallbacks_shape():
+    single_phase = _pref_ori_fallbacks(1)
+    check("single-phase sweep has just the 4 non-primary shared-axis fallbacks",
+          len(single_phase) == 4)
+    check("single-phase fallbacks never target a specific phase",
+          all(s.pref_ori_phase_index is None for s in single_phase))
+
+    two_phase = _pref_ori_fallbacks(2)
+    check("two-phase sweep adds 5 axes x 2 phases on top of the 4 shared-axis ones",
+          len(two_phase) == 4 + 5 * 2)
+    check("two-phase fallbacks include a phase-1-targeted, axis-(1,1,0) attempt",
+          any(s.pref_ori_phase_index == 1 and s.pref_ori_axis == (1, 1, 0) for s in two_phase))
+    check("two-phase fallbacks still include the untargeted shared-axis attempts too",
+          any(s.pref_ori_phase_index is None for s in two_phase))
+
+
+def test_runner_finds_per_phase_preferred_orientation():
+    """
+    Drives RefinementRunner.run_stage() with the real preferred_orientation
+    Stage (built with n_phases=2) against MultiPhasePrefOriFakeProject
+    (see its docstring — models the real Data/MgO+MgBC finding: forcing
+    one shared texture axis onto both phases makes Rwp worse for every
+    axis, but phase 1 alone genuinely has texture along (1,1,0)).
+    Confirms the ladder correctly exhausts every "both phases" attempt
+    first (all worse, matching real data) before finding the per-phase
+    fallback that actually helps.
+    """
+    with tempfile.TemporaryDirectory() as tmp:
+        outdir = Path(tmp)
+        cells = [(4.2, 4.2, 4.2, 90, 90, 90), (2.9, 2.9, 3.6, 90, 90, 120)]
+
+        po_stage = next(s for s in build_protocol(refine_atoms=False, n_phases=2)
+                         if s.name == "preferred_orientation")
+
+        set_active_project_class(MultiPhasePrefOriFakeProject)
+        try:
+            proj = MultiPhasePrefOriFakeProject(rwp=20.0, phase_cells=cells)
+            runner = RefinementRunner(proj, outdir, Bounds(), log=lambda m: None)
+            start_cells = {i: runner._cell(i) for i in range(2)}
+            result = runner.run_stage(po_stage, 1, start_cells)
+        finally:
+            set_active_project_class(FakeProject)
+
+        check("preferred_orientation succeeded via the phase-1-only fallback",
+              result.status == "ok")
+        check("detail names the phase-1-targeted, axis-(1,1,0) fallback",
+              "pref_ori_phase1_110" in result.detail)
+
+
 def test_runner_survives_solver_exception():
     with tempfile.TemporaryDirectory() as tmp:
         outdir = Path(tmp)
@@ -1113,6 +1210,8 @@ if __name__ == "__main__":
     test_runner_rolls_back_diverged_profile_params()
     test_runner_falls_back_to_simpler_profile_model()
     test_runner_finds_correct_preferred_orientation_axis()
+    test_pref_ori_fallbacks_shape()
+    test_runner_finds_per_phase_preferred_orientation()
     test_runner_freezes_mustrain_for_atoms_fallback()
     test_runner_survives_solver_exception()
     test_runner_catches_swallowed_solver_failure()

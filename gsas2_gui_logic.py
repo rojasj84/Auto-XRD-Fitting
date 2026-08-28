@@ -166,6 +166,67 @@ def auto_outdir(pattern_path: str, now: Optional[datetime] = None) -> str:
     return str(Path(pattern_path).resolve().parent / f"results_{stamp}")
 
 
+def scan_dataset_subfolders(parent_dir: str, strict: bool = False) -> tuple:
+    """
+    Scans the immediate subfolders of `parent_dir` for dataset folders —
+    a pattern file, an instrument-parameter file, and at least one CIF.
+    Returns (found: dict, skipped: dict): `found` is keyed by subfolder
+    name exactly like the original find_example_datasets() result;
+    `skipped` maps subfolder name -> a human-readable reason, for every
+    subfolder that had pattern/instprm/CIF files but didn't qualify (so
+    a batch run can tell the user *why* an expected experiment didn't
+    show up, instead of it just silently vanishing).
+
+    strict=False (find_example_datasets()'s behavior, preserved
+    unchanged): if a subfolder has more than one candidate pattern or
+    instprm file, silently uses the first (alphabetically) — fine for
+    the GUI's "Load example" picker, where a human sees what loaded and
+    can fix it by hand if it's wrong.
+
+    strict=True (gsas2_batch_run_logic.discover_experiments()'s
+    behavior): more than one candidate pattern or instprm file makes the
+    subfolder *ambiguous*, not just "pick one" — silently guessing which
+    file was meant is exactly the kind of thing an unattended batch run
+    over many experiments should never do quietly, since nobody's
+    watching to notice a wrong guess. Ambiguous subfolders are skipped
+    (with a reason), not silently resolved.
+    """
+    parent = Path(parent_dir)
+    if not parent.is_dir():
+        return {}, {}
+
+    found, skipped = {}, {}
+    for sub in sorted(p for p in parent.iterdir() if p.is_dir()):
+        patterns = [f for f in sub.iterdir()
+                    if f.suffix.lower() in (".xy", ".dat", ".fxye", ".chi", ".txt")]
+        instprms = [f for f in sub.iterdir() if f.suffix.lower() in (".prm", ".instprm")]
+        cifs = [f for f in sub.iterdir() if f.suffix.lower() == ".cif"]
+
+        if not (patterns and instprms and cifs):
+            missing = [label for label, files in
+                       [("pattern file", patterns), ("instrument-parameter file", instprms),
+                        ("CIF", cifs)] if not files]
+            if patterns or instprms or cifs:  # only report folders that look like an attempt
+                skipped[sub.name] = f"missing {', '.join(missing)}"
+            continue
+
+        if strict and (len(patterns) > 1 or len(instprms) > 1):
+            ambiguous = [label for label, files in
+                         [("pattern files", patterns), ("instrument-parameter files", instprms)]
+                         if len(files) > 1]
+            skipped[sub.name] = f"ambiguous: found {len(patterns)} pattern file(s), " \
+                                 f"{len(instprms)} instrument-parameter file(s) " \
+                                 f"({', '.join(ambiguous)} — need exactly one of each)"
+            continue
+
+        found[sub.name] = {
+            "pattern": str(patterns[0]),
+            "instprm": str(instprms[0]),
+            "cifs": [str(c) for c in cifs],
+        }
+    return found, skipped
+
+
 def find_example_datasets(script_dir: str) -> dict:
     """
     Looks for a Data/ folder next to the GUI script and returns any example
@@ -173,23 +234,8 @@ def find_example_datasets(script_dir: str) -> dict:
     buttons. Returns {} if there's no Data/ folder (e.g. the GUI script was
     copied somewhere else) rather than raising.
     """
-    data_dir = Path(script_dir) / "Data"
-    if not data_dir.is_dir():
-        return {}
-
-    examples = {}
-    for sub in sorted(p for p in data_dir.iterdir() if p.is_dir()):
-        patterns = [f for f in sub.iterdir()
-                    if f.suffix.lower() in (".xy", ".dat", ".fxye", ".chi", ".txt")]
-        instprms = [f for f in sub.iterdir() if f.suffix.lower() in (".prm", ".instprm")]
-        cifs = [f for f in sub.iterdir() if f.suffix.lower() == ".cif"]
-        if patterns and instprms and cifs:
-            examples[sub.name] = {
-                "pattern": str(patterns[0]),
-                "instprm": str(instprms[0]),
-                "cifs": [str(c) for c in cifs],
-            }
-    return examples
+    found, _skipped = scan_dataset_subfolders(str(Path(script_dir) / "Data"), strict=False)
+    return found
 
 
 # ---------------------------------------------------------------------------

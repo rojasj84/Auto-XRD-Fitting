@@ -84,21 +84,36 @@ def parse_args(argv=None):
                     help="JSON file listing the pattern and candidate (instprm, CIF) pairs. "
                          "See this script's module docstring for the format.")
     p.add_argument("--outdir", required=True, type=Path,
-                    help="Parent directory — each candidate gets its own "
+                    help="Parent directory - each candidate gets its own "
                          "<outdir>/<candidate name>/ subfolder.")
     p.add_argument("--gsasii-path", type=Path, default=None,
                     help="Overrides the manifest's \"gsasii_path\" for every candidate, "
                          "if given.")
     p.add_argument("--max-workers", type=int, default=None,
                     help="Max candidates to run at once. Default: run all of them "
-                         "concurrently (each is a lightweight subprocess — see this "
+                         "concurrently (each is a lightweight subprocess - see this "
                          "script's module docstring on typical per-run cost).")
     p.add_argument("--emit-events", action="store_true",
                     help="Also print one JSON line per event (sweep_plan/candidate_start/"
                          "candidate_done/sweep_done) to stdout, alongside the normal "
                          "human-readable log. Intended for a GUI or other tool driving this "
-                         "script as a subprocess — see gsas2_gui.py's Sweep tab.")
+                         "script as a subprocess - see gsas2_gui.py's Sweep tab.")
     return p.parse_args(argv)
+
+
+def _no_window_kwargs() -> dict:
+    """Extra subprocess.run kwargs to suppress the console window
+    Windows otherwise briefly flashes open for every subprocess — matters
+    doubly here: when this script is itself launched from the GUI's
+    Sweep tab with the same suppression, each gsas2_auto_refine.py it
+    spawns in turn would otherwise flash its own separate console window
+    on top. CREATE_NO_WINDOW only exists in the subprocess module on
+    Windows, so this is a no-op dict everywhere else. Defined locally
+    rather than imported from gsas2_gui.py so this stays runnable without
+    tkinter/matplotlib installed — see this module's own docstring."""
+    if sys.platform.startswith("win"):
+        return {"creationflags": subprocess.CREATE_NO_WINDOW}
+    return {}
 
 
 def run_one_candidate(cmd: list, outdir: Path) -> dict:
@@ -115,7 +130,8 @@ def run_one_candidate(cmd: list, outdir: Path) -> dict:
     # fully non-interactive and should never read from stdin, but without
     # explicitly closing it the child inherits whatever this process's
     # own stdin is, which isn't always a terminal that sends EOF.
-    proc = subprocess.run(cmd, capture_output=True, text=True, stdin=subprocess.DEVNULL)
+    proc = subprocess.run(cmd, capture_output=True, text=True, stdin=subprocess.DEVNULL,
+                           **_no_window_kwargs())
     return {
         "returncode": proc.returncode,
         "summary": read_summary(str(outdir)),
@@ -185,12 +201,12 @@ def main(argv=None) -> int:
             summary = outcome["summary"]
             if summary:
                 fq = summary.get("fit_quality") or {}
-                print(f"  [{name}] done — Rwp={summary.get('final_rwp')}, "
+                print(f"  [{name}] done - Rwp={summary.get('final_rwp')}, "
                       f"correlation={fq.get('calc_obs_correlation')}, "
                       f"needs_review={fq.get('needs_review')}", flush=True)
             else:
                 print(f"  [{name}] produced no summary.json (return code "
-                      f"{outcome['returncode']}) — see {args.outdir / name / 'run.log'} "
+                      f"{outcome['returncode']}) - see {args.outdir / name / 'run.log'} "
                       f"if it exists, or: {outcome['stderr_tail']}", flush=True)
             emit({"event": "candidate_done", "name": name,
                   "returncode": outcome["returncode"], "summary": summary})
@@ -212,7 +228,7 @@ def main(argv=None) -> int:
         "winner": winner["name"] if winner_ok else None,
         "results": ranked,
     }
-    (args.outdir / "sweep_summary.json").write_text(json.dumps(sweep_summary, indent=2))
+    (args.outdir / "sweep_summary.json").write_text(json.dumps(sweep_summary, indent=2), encoding="utf-8")
 
     if winner_ok:
         print(f"\nBest candidate: {winner['name']} "
@@ -222,7 +238,7 @@ def main(argv=None) -> int:
               "sweep_summary_path": str(args.outdir / "sweep_summary.json")})
         return 0
 
-    print("\nNo candidate produced a fit that passed the fit-quality check — "
+    print("\nNo candidate produced a fit that passed the fit-quality check - "
           "the best-ranked one is still recorded above and in sweep_summary.json, "
           "but none of these candidates should be trusted without review.", flush=True)
     emit({"event": "sweep_done", "ok": False,

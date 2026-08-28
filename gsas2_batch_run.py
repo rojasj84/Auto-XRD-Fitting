@@ -68,10 +68,10 @@ def parse_args(argv=None):
     )
     p.add_argument("--root", required=True, type=Path,
                     help="Folder whose immediate subfolders are each one experiment "
-                         "(pattern + instrument-parameter file + CIF(s)) — same "
+                         "(pattern + instrument-parameter file + CIF(s)) - same "
                          "discovery convention as the GUI's 'Load bundled example.'")
     p.add_argument("--outdir", required=True, type=Path,
-                    help="Parent output folder — each experiment gets its own "
+                    help="Parent output folder - each experiment gets its own "
                          "<outdir>/<experiment name>/ subfolder.")
     p.add_argument("--gsasii-path", required=True, type=Path,
                     help="Path to the local GSAS-II install, used for every experiment.")
@@ -177,7 +177,7 @@ def main(argv=None) -> int:
                                    outcome["summary"], args.rwp_threshold)
             rows.append(row)
             flag = "NEEDS REVIEW" if row["needs_review"] else "ok"
-            print(f"  [{name}] {flag} — Rwp={row['final_rwp']}, "
+            print(f"  [{name}] {flag} - Rwp={row['final_rwp']}, "
                   f"correlation={row['calc_obs_correlation']}", flush=True)
             emit({"event": "experiment_done", **row})
 
@@ -185,7 +185,7 @@ def main(argv=None) -> int:
     n_flagged = sum(1 for r in rows if r["needs_review"])
 
     results_csv = args.outdir / "batch_results.csv"
-    with results_csv.open("w", newline="") as fh:
+    with results_csv.open("w", newline="", encoding="utf-8") as fh:
         w = csv.DictWriter(fh, fieldnames=_CSV_FIELDS)
         w.writeheader()
         for r in rows:
@@ -200,7 +200,7 @@ def main(argv=None) -> int:
         "n_flagged": n_flagged,
         "skipped": skipped,
         "results": rows,
-    }, indent=2))
+    }, indent=2), encoding="utf-8")
 
     print(f"\n{len(rows)} experiment(s) run: {len(rows) - n_flagged} ok, "
           f"{n_flagged} flagged for review.")

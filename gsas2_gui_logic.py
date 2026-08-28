@@ -61,7 +61,7 @@ def validate_run_config(cfg: RunConfig) -> list:
         problems.append(f"Instrument file not found: {cfg.instprm}")
 
     if not cfg.cifs:
-        problems.append("No phase CIF added — add at least one.")
+        problems.append("No phase CIF added - add at least one.")
     else:
         for c in cfg.cifs:
             if not Path(c).is_file():
@@ -137,7 +137,7 @@ def load_config() -> dict:
     """Loads persisted GUI defaults (last-used paths). Never raises — a
     missing/corrupt config file just means empty defaults."""
     try:
-        return json.loads(CONFIG_PATH.read_text())
+        return json.loads(CONFIG_PATH.read_text(encoding="utf-8"))
     except (FileNotFoundError, json.JSONDecodeError, OSError):
         return {}
 
@@ -146,7 +146,7 @@ def save_config(values: dict) -> None:
     """Persists GUI defaults for next launch. Best-effort — a failure to
     save (e.g. read-only home directory) should not interrupt the user."""
     try:
-        CONFIG_PATH.write_text(json.dumps(values, indent=2))
+        CONFIG_PATH.write_text(json.dumps(values, indent=2), encoding="utf-8")
     except OSError:
         pass
 
@@ -216,7 +216,7 @@ def scan_dataset_subfolders(parent_dir: str, strict: bool = False) -> tuple:
                          if len(files) > 1]
             skipped[sub.name] = f"ambiguous: found {len(patterns)} pattern file(s), " \
                                  f"{len(instprms)} instrument-parameter file(s) " \
-                                 f"({', '.join(ambiguous)} — need exactly one of each)"
+                                 f"({', '.join(ambiguous)} - need exactly one of each)"
             continue
 
         found[sub.name] = {
@@ -255,7 +255,7 @@ def read_xy_csv(path: str) -> dict:
     p = Path(path)
     if not p.is_file():
         return {}
-    with p.open(newline="") as fh:
+    with p.open(newline="", encoding="utf-8") as fh:
         reader = csv.reader(fh)
         try:
             header = next(reader)
@@ -276,7 +276,7 @@ def read_summary(outdir: str) -> Optional[dict]:
     exist yet or is unreadable — never raises."""
     p = Path(outdir) / "summary.json"
     try:
-        return json.loads(p.read_text())
+        return json.loads(p.read_text(encoding="utf-8"))
     except (FileNotFoundError, json.JSONDecodeError, OSError):
         return None
 

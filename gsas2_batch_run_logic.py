@@ -70,7 +70,7 @@ def load_experiment_params(subfolder, defaults: BatchDefaults) -> dict:
     if not params_path.is_file():
         return result
     try:
-        overrides = json.loads(params_path.read_text())
+        overrides = json.loads(params_path.read_text(encoding="utf-8"))
     except (json.JSONDecodeError, OSError):
         return result
     if not isinstance(overrides, dict):

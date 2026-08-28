@@ -50,7 +50,7 @@ def make_raw_pattern_figure(raw: dict, tmin=None, tmax=None):
         return fig
 
     ax.plot(x, y, color="#1f6feb", linewidth=0.8)
-    ax.set_xlabel("2θ (°)")
+    ax.set_xlabel("2-theta (deg)")
     ax.set_ylabel("Intensity")
     ax.set_title("Raw pattern")
 
@@ -101,8 +101,8 @@ def make_fit_overlay_figure(fit: dict):
     ax_diff.axhline(0, color="#888", linewidth=0.6)
     if fit.get("y_diff"):
         ax_diff.plot(x, fit["y_diff"], color="#1f6feb", linewidth=0.7)
-    ax_diff.set_xlabel("2θ (°)")
-    ax_diff.set_ylabel("Obs − calc")
+    ax_diff.set_xlabel("2-theta (deg)")
+    ax_diff.set_ylabel("Obs - calc")
 
     fig.tight_layout()
     return fig

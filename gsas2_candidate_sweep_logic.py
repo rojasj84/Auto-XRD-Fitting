@@ -77,7 +77,7 @@ def load_manifest(path) -> tuple:
     user instead of a traceback.
     """
     try:
-        raw = json.loads(Path(path).read_text())
+        raw = json.loads(Path(path).read_text(encoding="utf-8"))
     except FileNotFoundError:
         raise ManifestError(f"Manifest file not found: {path}")
     except json.JSONDecodeError as exc:
@@ -111,7 +111,7 @@ def load_manifest(path) -> tuple:
             raise ManifestError(f"candidates[{i}] must be a JSON object, not {type(c).__name__}")
         name = c.get("name") or f"candidate_{i + 1}"
         if name in seen_names:
-            raise ManifestError(f"Duplicate candidate name {name!r} — "
+            raise ManifestError(f"Duplicate candidate name {name!r} - "
                                  "each candidate's outdir is named after it, so names must be unique.")
         seen_names.add(name)
 

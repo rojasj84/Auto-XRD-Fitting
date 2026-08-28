@@ -847,7 +847,7 @@ class RefinementRunner:
         status = "failed_error" if outcome.error else "failed_bounds"
         reason = f"raised {outcome.error!r}" if outcome.error else (
             f"failed bounds check (Rwp {rwp_before:.3f} -> {outcome.rwp_after:.3f})")
-        self.log(f"  [{label}] {reason} — reverting to checkpoint")
+        self.log(f"  [{label}] {reason} - reverting to checkpoint")
         self._reload(checkpoint)
         result = StageResult(stage.name, status, rwp_before, outcome.rwp_after, str(outcome.error or ""),
                               optional=stage.optional)
@@ -1005,7 +1005,7 @@ def export_histogram_csv(hist, path: Path, colnames: list) -> None:
     histogram's data arrays to a CSV at `path`, one row per point."""
     raw = hist.data["data"][1]
     arrays = [_mask_to_plain(raw[_DATA_COLS[name]]) for name in colnames]
-    with path.open("w", newline="") as fh:
+    with path.open("w", newline="", encoding="utf-8") as fh:
         w = csv.writer(fh)
         w.writerow(colnames)
         for row in zip(*arrays):
@@ -1135,7 +1135,7 @@ def parse_args(argv=None):
                     help="Max fractional change allowed in a,b,c before a stage is "
                          "considered diverged and rolled back. Default 0.15 (15%%).")
     p.add_argument("--tmin", type=float, default=None,
-                    help="Lower 2-theta (or TOF) bound to fit against — trims the tail "
+                    help="Lower 2-theta (or TOF) bound to fit against - trims the tail "
                          "below this value out of the refinement. Must be given together "
                          "with --tmax. Omit both to use the instrument/data file's full "
                          "range unchanged.")
@@ -1326,7 +1326,7 @@ def main(argv=None):
         msg = f"ERROR: refinement setup failed: {exc!r}"
         print(msg, file=sys.stderr)
         log_lines.append(msg)
-        (args.outdir / "run.log").write_text("\n".join(log_lines))
+        (args.outdir / "run.log").write_text("\n".join(log_lines), encoding="utf-8")
         emit({
             "event": "done", "ok": False, "failed_stages": ["setup"],
             "summary_path": None, "refined_cifs": [], "outdir": str(args.outdir),
@@ -1376,12 +1376,12 @@ def main(argv=None):
         "pattern_raw_csv": str(args.outdir / "pattern_raw.csv"),
         "fit_final_csv": str(args.outdir / "fit_final.csv"),
     }
-    (args.outdir / "summary.json").write_text(json.dumps(summary, indent=2))
+    (args.outdir / "summary.json").write_text(json.dumps(summary, indent=2), encoding="utf-8")
     if fit_quality["needs_review"]:
         log(f"  [fit-quality] NEEDS REVIEW: {fit_quality['reason']} "
             f"(calc/obs correlation: {fit_quality['calc_obs_correlation']})")
 
-    with (args.outdir / "summary.csv").open("w", newline="") as fh:
+    with (args.outdir / "summary.csv").open("w", newline="", encoding="utf-8") as fh:
         w = csv.writer(fh)
         w.writerow(["stage", "status", "rwp_before", "rwp_after"])
         for r in results:
@@ -1401,9 +1401,9 @@ def main(argv=None):
         except Exception as exc:  # noqa: BLE001
             log(f"  [export] could not export refined CIF for phase {phase.name!r}: {exc!r}")
     summary["refined_cifs"] = refined_cifs
-    (args.outdir / "summary.json").write_text(json.dumps(summary, indent=2))
+    (args.outdir / "summary.json").write_text(json.dumps(summary, indent=2), encoding="utf-8")
 
-    (args.outdir / "run.log").write_text("\n".join(log_lines))
+    (args.outdir / "run.log").write_text("\n".join(log_lines), encoding="utf-8")
 
     # An optional stage (atoms, preferred_orientation) whose primary config
     # and every fallback all failed is a legitimate "doesn't apply to this

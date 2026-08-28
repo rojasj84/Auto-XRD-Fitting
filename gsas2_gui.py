@@ -122,6 +122,17 @@ def configure_fonts(root: tk.Misc, size: int = 10) -> tuple:
     return sans, mono
 
 
+def _no_window_kwargs() -> dict:
+    """Extra subprocess.Popen kwargs to suppress the console window
+    Windows otherwise briefly flashes open for every subprocess spawned
+    from a windowed (no-console) Tkinter app — CREATE_NO_WINDOW only
+    exists in the subprocess module on Windows, so this is a no-op
+    dict everywhere else rather than an AttributeError."""
+    if sys.platform.startswith("win"):
+        return {"creationflags": subprocess.CREATE_NO_WINDOW}
+    return {}
+
+
 def open_path(path: str) -> None:
     """Opens a file or folder in the OS's default handler. Best-effort —
     a failure here (unsupported platform, no handler configured) is
@@ -524,7 +535,7 @@ class App(tk.Tk):
 
         ttk.Label(tab, text="Runs each candidate below as a full refinement against the "
                              "pattern file set on tab 1, in parallel, and ranks them by "
-                             "fit quality (not just Rwp) — see gsas2_candidate_sweep.py.",
+                             "fit quality (not just Rwp) - see gsas2_candidate_sweep.py.",
                   foreground="#555", wraplength=760).grid(
             row=0, column=0, columnspan=2, sticky="w", pady=(0, 8))
 
@@ -702,7 +713,7 @@ class App(tk.Tk):
                 for c in self.sweep_candidates
             ],
         }
-        manifest_path.write_text(json.dumps(manifest, indent=2))
+        manifest_path.write_text(json.dumps(manifest, indent=2), encoding="utf-8")
 
         cmd = [sys.executable, "-u", str(SWEEP_SCRIPT),
                "--manifest", str(manifest_path), "--outdir", str(outdir), "--emit-events"]
@@ -739,6 +750,7 @@ class App(tk.Tk):
             self.sweep_proc = subprocess.Popen(
                 cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
                 stdin=subprocess.DEVNULL, text=True, bufsize=1,
+                **_no_window_kwargs(),
             )
         except OSError as exc:
             self.sweep_event_queue.put({"event": "log", "text": f"Failed to start: {exc}"})
@@ -807,9 +819,9 @@ class App(tk.Tk):
                     self.sweep_result_tree.move(row_id, "", index)
                     self.sweep_result_tree.item(row_id, tags=("winner",) if name == winner else ())
             if winner:
-                self.sweep_status_var.set(f"Done — best: {winner}")
+                self.sweep_status_var.set(f"Done - best: {winner}")
             else:
-                self.sweep_status_var.set("Done — no candidate passed the fit-quality check")
+                self.sweep_status_var.set("Done - no candidate passed the fit-quality check")
             self._finish_sweep()
 
         elif kind == "process_exit":
@@ -1040,6 +1052,7 @@ class App(tk.Tk):
             self.proc = subprocess.Popen(
                 cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
                 stdin=subprocess.DEVNULL, text=True, bufsize=1,
+                **_no_window_kwargs(),
             )
         except OSError as exc:
             self.event_queue.put({"event": "log", "text": f"Failed to start: {exc}"})

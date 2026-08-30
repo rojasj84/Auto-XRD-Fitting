@@ -42,6 +42,8 @@ import json
 import sys
 from pathlib import Path
 
+import numpy as np
+
 SCRIPT_DIR = Path(__file__).resolve().parent
 sys.path.insert(0, str(SCRIPT_DIR))
 
@@ -70,14 +72,15 @@ def parse_args(argv=None):
                     help="Unique scratch directory for this one evaluation's working .gpx "
                          "— must not be shared with any other concurrently-running worker.")
     p.add_argument("--values", required=True,
-                    help='JSON dict: {"<phase index>": {"size": .., "mustrain_eq": .., '
-                         '"mustrain_ax": ..}, ..., "low_angle_cutoff": .., '
-                         '"high_angle_cutoff": ..} — one entry per phase in the project, plus '
-                         'optional whole-histogram "low_angle_cutoff"/"high_angle_cutoff" '
-                         '(degrees of data to discard from the start/end of the fit range). '
-                         'Every phase gets the same Size/Mustrain *type* (isotropic size, '
-                         'uniaxial mustrain — matching profile_microstrain_size\'s primary '
-                         'config in gsas2_auto_refine.py) with these as the starting values.')
+                    help='JSON dict: {"<phase index>": {"size": .., "mustrain": ..}, ..., '
+                         '"low_angle_cutoff": .., "high_angle_cutoff": ..} — one entry per '
+                         'phase, plus optional whole-histogram "low_angle_cutoff"/'
+                         '"high_angle_cutoff" (degrees of data to discard from the start/end '
+                         'of the fit range). Size is always isotropic; Mustrain is isotropic '
+                         '(one "mustrain" value) if that key is present, or uniaxial (two '
+                         'values, "mustrain_eq"/"mustrain_ax") if those are present instead — '
+                         'see gsas2_swarm_logic.build_param_specs\' mustrain_type for why '
+                         'isotropic is the default.')
     return p.parse_args(argv)
 
 
@@ -88,6 +91,50 @@ def _rwp(hist) -> float:
     attr = hist.residuals
     r = attr() if callable(attr) else attr
     return float(r.get("wR", r.get("Rwp", float("nan"))))
+
+
+def peak_amplitude_error(hist) -> "float | None":
+    """
+    Mean RELATIVE intensity mismatch across every calculated reflection
+    from every phase in the histogram, weighting every peak EQUALLY
+    regardless of its size — unlike Rwp, which is intensity-weighted and
+    so is dominated by whichever peak is largest (confirmed on real FeF3
+    data: a fit can nail one huge peak, drag Rwp down, while several
+    smaller peaks are comparatively poorly matched — Rwp alone doesn't
+    surface that). This is a secondary signal used to break near-ties
+    between candidates with similar Rwp — see gsas2_swarm_optimize.py's
+    --tie-break-rwp-margin — not a replacement for Rwp itself.
+
+    Per-reflection Iobs/Icalc are derived from GSAS-II's own reflection
+    list per its documented column layout (docs/source/objvarorg.rst,
+    "Powder Reflection Data Structure"): Iobs = Icorr * Fobs^2, Icalc =
+    Icorr * Fcalc^2, where Icorr is the reflection's intensity-correction
+    column. Column indices shift by one for 3+1 superspace phases (the
+    'Super' flag) — both are handled.
+
+    Returns None only if the histogram has no phases/reflections to
+    compare at all (never raises).
+    """
+    reflection_lists = hist.reflections()
+    relative_errors = []
+    for refl in reflection_lists.values():
+        reflist = np.asarray(refl.get("RefList", []), dtype=float)
+        if reflist.size == 0:
+            continue
+        fobs2_col, fcalc2_col, icorr_col = (9, 10, 12) if refl.get("Super") else (8, 9, 11)
+        iobs = reflist[:, icorr_col] * reflist[:, fobs2_col]
+        icalc = reflist[:, icorr_col] * reflist[:, fcalc2_col]
+        # Normalize by whichever of Iobs/Icalc is larger — bounds the
+        # relative error even when one side is near zero (a weak-to-
+        # absent reflection), rather than dividing by a near-zero Icalc
+        # and blowing up.
+        denom = np.maximum(np.abs(iobs), np.abs(icalc))
+        denom = np.where(denom == 0, 1.0, denom)  # both exactly 0 -> perfect match, error 0
+        relative_errors.extend((np.abs(iobs - icalc) / denom).tolist())
+
+    if not relative_errors:
+        return None
+    return float(np.mean(relative_errors))
 
 
 def _cell(gpx, phase_idx: int):
@@ -156,11 +203,22 @@ def main(argv=None) -> int:
             hap["Size"][0] = "isotropic"
             hap["Size"][1][0] = float(v["size"])
             hap["Size"][2][0] = True
-            hap["Mustrain"][0] = "uniaxial"
-            hap["Mustrain"][1][0] = float(v["mustrain_eq"])
-            hap["Mustrain"][1][1] = float(v["mustrain_ax"])
-            hap["Mustrain"][2][0] = True
-            hap["Mustrain"][2][1] = True
+            # "mustrain" (isotropic, one free value) vs "mustrain_eq"/
+            # "mustrain_ax" (uniaxial, two) — which key(s) are present
+            # tells us which gsas2_swarm_logic.build_param_specs()
+            # mustrain_type built this candidate. Shapes verified against
+            # a real project via phase.set_HAP_refinements(): isotropic
+            # sets only value[0]/refine[0]; uniaxial sets both [0] and [1].
+            if "mustrain" in v:
+                hap["Mustrain"][0] = "isotropic"
+                hap["Mustrain"][1][0] = float(v["mustrain"])
+                hap["Mustrain"][2][0] = True
+            else:
+                hap["Mustrain"][0] = "uniaxial"
+                hap["Mustrain"][1][0] = float(v["mustrain_eq"])
+                hap["Mustrain"][1][1] = float(v["mustrain_ax"])
+                hap["Mustrain"][2][0] = True
+                hap["Mustrain"][2][1] = True
 
         # Re-point the project's save file to our OWN working copy before
         # refining, not the checkpoint — do_refinements() reads from and
@@ -181,6 +239,7 @@ def main(argv=None) -> int:
             raise RuntimeError(f"GSAS-II solver reported an internal failure: {failure.group(0)!r}")
 
         rwp_after = _rwp(hist)
+        peak_error = peak_amplitude_error(hist)
 
         sane = rwp_improved_or_stable(rwp_before, rwp_after, bounds)
         if sane:
@@ -197,22 +256,27 @@ def main(argv=None) -> int:
             sane = sane and profile_params_sane(profile_values, bounds)
 
         final = {}
-        for phase_idx_str in phase_values:
+        for phase_idx_str, v in phase_values.items():
             phase = gpx.phase(int(phase_idx_str))
             hap = phase.data["Histograms"][hist.name]
-            final[phase_idx_str] = {
-                "size": hap["Size"][1][0],
-                "mustrain_eq": hap["Mustrain"][1][0],
-                "mustrain_ax": hap["Mustrain"][1][1],
-            }
+            if "mustrain" in v:
+                final[phase_idx_str] = {"size": hap["Size"][1][0], "mustrain": hap["Mustrain"][1][0]}
+            else:
+                final[phase_idx_str] = {
+                    "size": hap["Size"][1][0],
+                    "mustrain_eq": hap["Mustrain"][1][0],
+                    "mustrain_ax": hap["Mustrain"][1][1],
+                }
         if limits_applied is not None:
             final["limits_applied"] = limits_applied
 
-        print(json.dumps({"rwp": rwp_after, "sane": bool(sane), "error": None, "final": final}))
+        print(json.dumps({"rwp": rwp_after, "sane": bool(sane), "error": None, "final": final,
+                           "peak_amplitude_error": peak_error}))
         return 0
 
     except Exception as exc:  # noqa: BLE001 — always report a parseable result, never a raw traceback
-        print(json.dumps({"rwp": None, "sane": False, "error": repr(exc), "final": None}))
+        print(json.dumps({"rwp": None, "sane": False, "error": repr(exc), "final": None,
+                           "peak_amplitude_error": None}))
         return 1
 
 

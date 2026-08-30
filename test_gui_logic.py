@@ -279,6 +279,21 @@ def test_read_summary():
         check("corrupt summary.json returns None, not raise", logic.read_summary(tmp) is None)
 
 
+def test_read_summary_custom_filename():
+    """The Swarm tab reads swarm_summary.json (gsas2_swarm_optimize.py's
+    own filename, a different shape file living alongside — not instead
+    of — summary.json in a different tool's outdir) via the same
+    reader, just naming which file explicitly."""
+    with tempfile.TemporaryDirectory() as tmp:
+        check("a non-default filename that doesn't exist returns None",
+              logic.read_summary(tmp, filename="swarm_summary.json") is None)
+        (Path(tmp) / "swarm_summary.json").write_text(json.dumps({"final_rwp": 6.07}))
+        check("the default 'summary.json' lookup is unaffected by a swarm_summary.json "
+              "sitting in the same folder", logic.read_summary(tmp) is None)
+        check("swarm_summary.json is read when named explicitly",
+              logic.read_summary(tmp, filename="swarm_summary.json")["final_rwp"] == 6.07)
+
+
 def test_format_cell_rows():
     summary = {
         "cells": {
@@ -319,5 +334,6 @@ if __name__ == "__main__":
     test_scan_dataset_subfolders_strict_mode()
     test_read_xy_csv()
     test_read_summary()
+    test_read_summary_custom_filename()
     test_format_cell_rows()
     print("\nAll GUI logic checks passed (no tkinter/display required for this test).")

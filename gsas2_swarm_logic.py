@@ -60,15 +60,26 @@ Rwp=2.92 for a point that verified at Rwp=6.11. fit_surrogate()'s
 coefficients toward zero — and gsas2_swarm_optimize.py additionally
 raises min_points_for_degree()'s own bar before ever trusting a fit at
 all. See both functions' docstrings.
+
+A third real-data failure: even with ridge_alpha, an unconstrained
+linear-space fit occasionally predicted a physically impossible NEGATIVE
+Rwp (e.g. -3.45) for a proposed point — a real evaluation was spent
+verifying a candidate the surrogate was confidently wrong about in a way
+that couldn't even be true. fit_surrogate() now fits log(Rwp), not Rwp
+directly, and predict_surrogate() exponentiates back — every prediction
+is positive BY CONSTRUCTION, not by clipping after the fact.
 """
 
 from dataclasses import dataclass, field, replace
 
 import numpy as np
 
-# One Size + Mustrain(equatorial, axial) triple per phase, in this fixed
-# order — see ParamSpec / build_param_specs().
-_PARAM_NAMES = ("size", "mustrain_eq", "mustrain_ax")
+# Size + Mustrain per phase, in this fixed order — see ParamSpec /
+# build_param_specs(). Mustrain is either one "mustrain" value
+# (mustrain_type="isotropic", the default) or two "mustrain_eq"/
+# "mustrain_ax" values (mustrain_type="uniaxial") — see build_param_specs'
+# docstring for why isotropic is the default.
+MUSTRAIN_TYPES = ("isotropic", "uniaxial")
 
 # The optional whole-histogram (not per-phase) dimensions: how many
 # degrees of data to discard from the START/END of the fit range — see
@@ -101,7 +112,8 @@ class ParamSpec:
     perturbation of exactly 0.0 is always 0.0 regardless of noise, so it
     would never be searched at all)."""
     phase_index: "int | None"
-    name: str  # one of _PARAM_NAMES, LOW_ANGLE_CUTOFF_PARAM, or HIGH_ANGLE_CUTOFF_PARAM
+    name: str  # "size", "mustrain" (isotropic) or "mustrain_eq"/"mustrain_ax"
+               # (uniaxial), LOW_ANGLE_CUTOFF_PARAM, or HIGH_ANGLE_CUTOFF_PARAM
     lo: float
     hi: float
     kind: str = "multiplicative"  # "multiplicative" or "additive"
@@ -109,15 +121,35 @@ class ParamSpec:
 
 def build_param_specs(n_phases: int, size_bounds=(0.01, 1000.0),
                        mustrain_bounds=(0.01, 9000.0),
+                       mustrain_type: str = "isotropic",
                        low_angle_cutoff_bounds=None,
                        high_angle_cutoff_bounds=None) -> list:
-    """One (size, mustrain_eq, mustrain_ax) triple of ParamSpecs per
-    phase index 0..n_phases-1, in a fixed, deterministic order — this
-    order is what every position/velocity array's columns mean
-    throughout the rest of this module. low_angle_cutoff (if given) is
-    always appended before high_angle_cutoff (if given) — callers that
-    build a seed/starting position must append their own extra values in
-    that same order (see gsas2_swarm_optimize.py's x0 construction).
+    """One (size, mustrain...) group of ParamSpecs per phase index
+    0..n_phases-1, in a fixed, deterministic order — this order is what
+    every position/velocity array's columns mean throughout the rest of
+    this module. low_angle_cutoff (if given) is always appended before
+    high_angle_cutoff (if given) — callers that build a seed/starting
+    position must append their own extra values in that same order (see
+    gsas2_swarm_optimize.py's x0 construction).
+
+    `mustrain_type` is "isotropic" (the default — one "mustrain"
+    dimension per phase) or "uniaxial" (two dimensions per phase,
+    "mustrain_eq"/"mustrain_ax"). isotropic is the default because
+    uniaxial Mustrain and isotropic Size are confirmed, not theoretically
+    possible, to be ~98% correlated for real data (see gsas2_auto_
+    refine.py's profile_microstrain_size stage, which already documents
+    this and falls back to isotropic Mustrain for exactly this reason):
+    diagnosed directly on a real FeF3 checkpoint, EVERY insane swarm
+    perturbation (26/26, both close- and far-tier) failed for the same
+    reason — Size collapsed to exactly 10.0 while Mustrain exploded to
+    unphysical magnitudes (some over a billion), a signature of the
+    solver running off along that ~98%-correlated near-degenerate
+    direction rather than a badly-chosen starting point per se. Reducing
+    Mustrain to one free parameter removes that degenerate pairing at
+    the source, instead of generating candidates doomed to fail it and
+    then recovering (or not) after the fact. uniaxial is preserved as an
+    explicit opt-in for datasets/phases where the extra anisotropic
+    microstrain freedom is worth that risk.
 
     `low_angle_cutoff_bounds`/`high_angle_cutoff_bounds` (e.g. (0.0,
     20.0) / (0.0, 10.0)) each additionally append ONE whole-histogram
@@ -144,11 +176,16 @@ def build_param_specs(n_phases: int, size_bounds=(0.01, 1000.0),
     justified (known instrument limitations decided BEFORE looking at
     Rwp) — not wide enough to let the search cherry-pick around a
     genuinely hard-to-fit peak."""
+    if mustrain_type not in MUSTRAIN_TYPES:
+        raise ValueError(f"mustrain_type must be one of {MUSTRAIN_TYPES}, got {mustrain_type!r}")
     specs = []
     for phase_index in range(n_phases):
         specs.append(ParamSpec(phase_index, "size", *size_bounds))
-        specs.append(ParamSpec(phase_index, "mustrain_eq", *mustrain_bounds))
-        specs.append(ParamSpec(phase_index, "mustrain_ax", *mustrain_bounds))
+        if mustrain_type == "isotropic":
+            specs.append(ParamSpec(phase_index, "mustrain", *mustrain_bounds))
+        else:
+            specs.append(ParamSpec(phase_index, "mustrain_eq", *mustrain_bounds))
+            specs.append(ParamSpec(phase_index, "mustrain_ax", *mustrain_bounds))
     if low_angle_cutoff_bounds is not None:
         specs.append(ParamSpec(None, LOW_ANGLE_CUTOFF_PARAM, *low_angle_cutoff_bounds,
                                 kind="additive"))
@@ -267,6 +304,40 @@ def training_target(evaluation: dict, worst_sane_rwp) -> "float | None":
     if worst_sane_rwp is None:
         return None
     return float(worst_sane_rwp) + SANE_PENALTY_MARGIN
+
+
+def is_better_candidate(fit: float, peak_error, best_fitness: float, best_peak_error,
+                         tie_margin: float) -> bool:
+    """
+    Decides whether a new (already-confirmed-sane) candidate should
+    replace the current best one. Rwp stays the PRIMARY criterion — the
+    surrogate/PSO machinery is untouched and keeps optimizing Rwp only,
+    since it's cheap and already validated — but when two candidates'
+    Rwp values are within `tie_margin` of each other (a near-wash by that
+    metric), this breaks the tie using peak_amplitude_error instead.
+
+    Why: Rwp is intensity-weighted, so it's dominated by whichever peak
+    happens to be largest — a real scientist's concern, confirmed on real
+    FeF3 data: one huge peak can be fit very well (pulling Rwp down)
+    while several smaller peaks are comparatively poorly matched, and
+    Rwp alone never surfaces that. peak_amplitude_error weighs every
+    peak equally instead (see gsas2_swarm_worker.peak_amplitude_error),
+    so among near-equally-good-by-Rwp candidates, this prefers the one
+    that's actually more evenly accurate across the whole pattern —
+    without ever letting a worse-Rwp candidate win outright; that would
+    reopen exactly the "deceptively good-looking number" trap
+    UNSOUND_PENALTY exists to avoid.
+
+    Falls back to a plain Rwp comparison if either peak_error value is
+    unavailable (e.g. a histogram with no reflections at all).
+    """
+    if fit < best_fitness - tie_margin:
+        return True
+    if fit > best_fitness + tie_margin:
+        return False
+    if peak_error is None or best_peak_error is None:
+        return fit < best_fitness
+    return peak_error < best_peak_error
 
 
 def init_swarm(param_specs: list, n_particles: int, rng: np.random.Generator,
@@ -568,9 +639,17 @@ def min_points_for_degree(n_dims: int, degree: int, margin: int = 5) -> int:
 def fit_surrogate(X: np.ndarray, y: np.ndarray, degree: int = 2, backend: str = "cpu",
                    ridge_alpha: float = 1.0) -> SurrogateModel:
     """
-    Fits Rwp ~ polynomial(params) by (ridge-regularized) least squares
-    over every (params, Rwp) point evaluated so far. `backend` is "cpu"
-    (numpy) or "gpu" (torch — verified against real ROCm hardware).
+    Fits log(Rwp) ~ polynomial(params) by (ridge-regularized) least
+    squares over every (params, Rwp) point evaluated so far (`y` must be
+    strictly positive — always true here: real Rwp values and
+    training_target()'s bounded penalty are both positive by
+    construction). predict_surrogate() exponentiates back, so every
+    prediction is POSITIVE BY CONSTRUCTION rather than by clipping —
+    confirmed as a real, not just cosmetic, problem on real data: an
+    unconstrained linear-space fit predicted Rwp=-3.45 for a proposed
+    point, an impossible value search_surrogate's PSO would happily
+    "exploit" as if it were genuinely the best point found. `backend` is
+    "cpu" (numpy) or "gpu" (torch — verified against real ROCm hardware).
     Returns a SurrogateModel whose coefficients are always plain numpy
     regardless of backend, so predict_surrogate() and every caller never
     need to know which one did the fitting.
@@ -587,10 +666,19 @@ def fit_surrogate(X: np.ndarray, y: np.ndarray, degree: int = 2, backend: str = 
     for a point real GSAS-II verified at Rwp=6.11, a >100% relative miss.
     This is a DIFFERENT failure mode from the one trust_region_specs()
     guards against (extrapolation outside the trained region); ridge_alpha
-    guards the region *inside* it. Set to 0 to recover plain OLS.
+    guards the region *inside* it. Set to 0 to recover plain OLS. The
+    intercept term (see _ridge_augment_numpy) is exempt from shrinkage in
+    EITHER case — in log-space it's log(baseline Rwp), and shrinking it
+    would bias every prediction toward exp(0)=1% regardless of the data's
+    actual baseline, the same bias problem already fixed once for the
+    linear-space intercept.
     """
     X = np.asarray(X, dtype=float)
     y = np.asarray(y, dtype=float)
+    if np.any(y <= 0):
+        raise ValueError("fit_surrogate requires strictly positive targets (Rwp values are "
+                          "always > 0) — got a non-positive value, which log(y) can't handle.")
+    log_y = np.log(y)
     n_dims = X.shape[1]
     x_mean = X.mean(axis=0)
     x_scale = X.std(axis=0)
@@ -600,10 +688,10 @@ def fit_surrogate(X: np.ndarray, y: np.ndarray, degree: int = 2, backend: str = 
 
     if backend == "cpu":
         design = _poly_features_numpy(Xn, terms)
-        design_aug, y_aug = _ridge_augment_numpy(design, y, ridge_alpha)
+        design_aug, y_aug = _ridge_augment_numpy(design, log_y, ridge_alpha)
         coeffs, *_ = np.linalg.lstsq(design_aug, y_aug, rcond=None)
     elif backend == "gpu":
-        coeffs = _fit_surrogate_torch(Xn, y, terms, ridge_alpha)
+        coeffs = _fit_surrogate_torch(Xn, log_y, terms, ridge_alpha)
     else:
         raise ValueError(f"unknown backend {backend!r}, expected 'cpu' or 'gpu'")
 
@@ -614,13 +702,17 @@ def fit_surrogate(X: np.ndarray, y: np.ndarray, degree: int = 2, backend: str = 
 def predict_surrogate(model: SurrogateModel, X: np.ndarray) -> np.ndarray:
     """Evaluates a fitted SurrogateModel at (possibly many) points —
     always plain numpy in, plain numpy out, regardless of which backend
-    fit the model. Cheap enough (a matrix multiply) to call every
-    generation of an in-memory PSO search — see search_surrogate()."""
+    fit the model. Cheap enough (a matrix multiply plus an exp()) to call
+    every generation of an in-memory PSO search — see search_surrogate().
+    Returns exp(polynomial(x)) — see fit_surrogate()'s docstring for why
+    the model is fit in log-space: this guarantees every prediction is
+    strictly positive, never the physically-impossible negative "Rwp"
+    values an unconstrained linear-space fit produced on real data."""
     X = np.asarray(X, dtype=float)
     Xn = (X - model.x_mean) / model.x_scale
     terms = _poly_terms(model.n_dims, model.degree)
     design = _poly_features_numpy(Xn, terms)
-    return design @ model.coeffs
+    return np.exp(design @ model.coeffs)
 
 
 def trust_region_specs(param_specs: list, X: np.ndarray, margin_frac: float = 0.25) -> list:

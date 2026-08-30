@@ -271,10 +271,15 @@ def read_xy_csv(path: str) -> dict:
     return columns
 
 
-def read_summary(outdir: str) -> Optional[dict]:
-    """Reads summary.json from a run's output folder. None if it doesn't
-    exist yet or is unreadable — never raises."""
-    p = Path(outdir) / "summary.json"
+def read_summary(outdir: str, filename: str = "summary.json") -> Optional[dict]:
+    """Reads a summary JSON file from a run's output folder — `filename`
+    defaults to gsas2_auto_refine.py's own "summary.json", but the Swarm
+    tab passes "swarm_summary.json" (gsas2_swarm_optimize.py's own name
+    for the same shape of file — same field names where they overlap,
+    e.g. final_rwp/cells/pattern_raw_csv/fit_final_csv, specifically so
+    this reader and gsas2_plots.py's figure-builders work unchanged for
+    both). None if it doesn't exist yet or is unreadable — never raises."""
+    p = Path(outdir) / filename
     try:
         return json.loads(p.read_text(encoding="utf-8"))
     except (FileNotFoundError, json.JSONDecodeError, OSError):

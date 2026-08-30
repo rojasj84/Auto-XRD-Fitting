@@ -256,9 +256,15 @@ class App(tk.Tk):
         self._build_data_tab(notebook)
         self._build_phases_tab(notebook)
         self._build_options_tab(notebook)
-        self._build_results_tab(notebook)
-        self._build_sweep_tab(notebook)
         self._build_swarm_tab(notebook)
+        # Results isn't a step in the 1-2-3-4 configure-and-run sequence
+        # above — it's a "check what happened" destination for either
+        # workflow, so it's deliberately unnumbered and placed last
+        # rather than sitting in the middle of the numbered tabs.
+        self._build_results_tab(notebook)
+        # Sweep tab hidden (not deleted — _build_sweep_tab is untouched
+        # and easy to re-enable) per the user's request; its own state/
+        # methods are left as-is below.
         self.main_pane.add(notebook, weight=3)
 
         run_panel = ttk.Frame(self.main_pane)
@@ -355,7 +361,7 @@ class App(tk.Tk):
 
     def _build_results_tab(self, notebook):
         tab = ttk.Frame(notebook, padding=8)
-        notebook.add(tab, text="4. Results")
+        notebook.add(tab, text="Results")
         tab.columnconfigure(0, weight=1)
         tab.columnconfigure(1, weight=1)
         tab.rowconfigure(1, weight=3)
@@ -880,9 +886,9 @@ class App(tk.Tk):
 
     def _build_swarm_tab(self, notebook):
         tab = ttk.Frame(notebook, padding=12)
-        notebook.add(tab, text="6. Swarm")
+        notebook.add(tab, text="4. Swarm")
         tab.columnconfigure(1, weight=1)
-        tab.rowconfigure(8, weight=1)
+        tab.rowconfigure(9, weight=1)
 
         ttk.Label(tab, text="Searches many Size/Mustrain starting points from a checkpoint .gpx "
                              "(from a real gsas2_auto_refine.py run) and reports the best, "
@@ -952,8 +958,26 @@ class App(tk.Tk):
         ttk.Label(knobs, text="A fixed seed makes a run exactly reproducible (same result every time).",
                   foreground="#555").grid(row=3, column=2, columnspan=2, sticky="w")
 
+        ttk.Label(knobs, text="Mustrain type:").grid(row=4, column=0, sticky="w", pady=3)
+        self.swarm_mustrain_type_var = tk.StringVar(value="isotropic")
+        ttk.Combobox(knobs, textvariable=self.swarm_mustrain_type_var,
+                     values=("isotropic", "uniaxial"), state="readonly", width=9).grid(
+            row=4, column=1, sticky="w", padx=(4, 20))
+        ttk.Label(knobs, text="isotropic (recommended): uniaxial Mustrain + isotropic Size are "
+                              "~98% correlated on real data, causing most 'insane' results.",
+                  foreground="#555", wraplength=420).grid(row=4, column=2, columnspan=2, sticky="w")
+
+        self.swarm_keep_evaluations_var = tk.BooleanVar(value=False)
+        ttk.Checkbutton(knobs, text="Keep every candidate's evaluation files",
+                        variable=self.swarm_keep_evaluations_var).grid(
+            row=5, column=0, columnspan=2, sticky="w", pady=3)
+        ttk.Label(knobs, text="Off (recommended): only the winner is kept, as best.gpx — a real "
+                              "run can otherwise leave hundreds of MB to multiple GB of "
+                              "discarded candidates on disk.",
+                  foreground="#555", wraplength=420).grid(row=5, column=2, columnspan=2, sticky="w")
+
         trim_box = ttk.Labelframe(tab, text="Fit-range trimming (optional)", padding=8)
-        trim_box.grid(row=5, column=0, columnspan=3, sticky="we", pady=(0, 8))
+        trim_box.grid(row=6, column=0, columnspan=3, sticky="we", pady=(0, 8))
         ttk.Label(trim_box, text="Also search how many degrees to discard from each end of the "
                                   "fit range (e.g. beamstop shadow at low angle, vanishing peak "
                                   "statistics at high angle). Rwp is NOT directly comparable "
@@ -983,7 +1007,7 @@ class App(tk.Tk):
         ttk.Entry(high_angle_frame, textvariable=self.swarm_high_angle_hi_var, width=6).pack(side="left")
 
         run_row = ttk.Frame(tab)
-        run_row.grid(row=6, column=0, columnspan=3, sticky="we")
+        run_row.grid(row=7, column=0, columnspan=3, sticky="we")
         self.swarm_run_button = ttk.Button(run_row, text="Run swarm", command=self._on_run_swarm)
         self.swarm_run_button.pack(side="left")
         self.swarm_cancel_button = ttk.Button(run_row, text="Cancel", command=self._on_cancel_swarm,
@@ -992,6 +1016,9 @@ class App(tk.Tk):
         self.swarm_open_outdir_button = ttk.Button(run_row, text="Open output folder",
                                                      command=self._open_swarm_outdir, state="disabled")
         self.swarm_open_outdir_button.pack(side="left", padx=(16, 0))
+        self.swarm_view_fit_button = ttk.Button(run_row, text="View best fit",
+                                                  command=self._open_swarm_best_fit_view, state="disabled")
+        self.swarm_view_fit_button.pack(side="left", padx=(6, 0))
         self.swarm_elapsed_var = tk.StringVar(value="")
         ttk.Label(run_row, textvariable=self.swarm_elapsed_var).pack(side="right", padx=(0, 12))
         self.swarm_status_var = tk.StringVar(value="Idle")
@@ -1005,10 +1032,10 @@ class App(tk.Tk):
         ]:
             self.swarm_progress_tree.heading(col, text=label)
             self.swarm_progress_tree.column(col, width=width, anchor="w")
-        self.swarm_progress_tree.grid(row=7, column=0, columnspan=3, sticky="we", pady=(10, 6))
+        self.swarm_progress_tree.grid(row=8, column=0, columnspan=3, sticky="we", pady=(10, 6))
 
         swarm_log_frame = ttk.Frame(tab)
-        swarm_log_frame.grid(row=8, column=0, columnspan=3, sticky="nsew")
+        swarm_log_frame.grid(row=9, column=0, columnspan=3, sticky="nsew")
         swarm_log_frame.columnconfigure(0, weight=1)
         swarm_log_frame.rowconfigure(0, weight=1)
         self.swarm_log_text = tk.Text(swarm_log_frame, height=8, state="disabled", wrap="word",
@@ -1062,6 +1089,8 @@ class App(tk.Tk):
             surrogate_particles=self.swarm_surrogate_particles_var.get(),
             surrogate_generations=self.swarm_surrogate_generations_var.get(),
             backend=self.swarm_backend_var.get(),
+            mustrain_type=self.swarm_mustrain_type_var.get(),
+            keep_evaluations=self.swarm_keep_evaluations_var.get(),
             seed=_parse_optional_int(self.swarm_seed_var.get()),
             max_workers=_parse_optional_int(self.swarm_max_workers_var.get()),
             low_angle_cutoff_bounds=_parse_optional_bounds(
@@ -1095,6 +1124,7 @@ class App(tk.Tk):
         self.swarm_run_button.configure(state="disabled")
         self.swarm_cancel_button.configure(state="normal")
         self.swarm_open_outdir_button.configure(state="disabled")
+        self.swarm_view_fit_button.configure(state="disabled")
         self.swarm_outdir = cfg.outdir
         self.swarm_start_time = time.time()
         self.swarm_elapsed_var.set("0.0s elapsed")
@@ -1196,10 +1226,52 @@ class App(tk.Tk):
         self.swarm_start_time = None
         if self.swarm_outdir and Path(self.swarm_outdir).is_dir():
             self.swarm_open_outdir_button.configure(state="normal")
+        summary = logic.read_summary(self.swarm_outdir, filename="swarm_summary.json") if self.swarm_outdir else None
+        if summary and summary.get("fit_final_csv"):
+            self.swarm_view_fit_button.configure(state="normal")
 
     def _open_swarm_outdir(self):
         if self.swarm_outdir:
             open_path(self.swarm_outdir)
+
+    def _open_swarm_best_fit_view(self):
+        """Opens a small standalone window plotting the swarm's best
+        verified result (raw pattern + fit overlay), reusing the exact
+        same figure-builders as the main Results tab (gsas2_plots.py) —
+        deliberately a separate lightweight window rather than repointing
+        the Results tab at the swarm's outdir, since that tab's trim/
+        re-run controls are specific to the main refinement workflow and
+        would re-run the wrong thing if clicked here."""
+        summary = logic.read_summary(self.swarm_outdir, filename="swarm_summary.json") if self.swarm_outdir else None
+        if not summary or not summary.get("fit_final_csv"):
+            messagebox.showinfo("No fit to view", "No completed swarm run with an exportable "
+                                                    "fit yet.")
+            return
+
+        win = tk.Toplevel(self)
+        win.title(f"Swarm best fit — {plots.cell_summary_text(summary)}")
+        win.geometry("900x760")
+
+        raw = logic.read_xy_csv(summary.get("pattern_raw_csv", ""))
+        fit = logic.read_xy_csv(summary.get("fit_final_csv", ""))
+
+        raw_frame = ttk.Frame(win)
+        raw_frame.pack(side="top", fill="both", expand=True)
+        raw_canvas = FigureCanvasTkAgg(plots.make_raw_pattern_figure(raw), master=raw_frame)
+        raw_toolbar_frame = ttk.Frame(raw_frame)
+        raw_toolbar_frame.pack(side="top", fill="x")
+        NavigationToolbar2Tk(raw_canvas, raw_toolbar_frame).update()
+        raw_canvas.get_tk_widget().pack(side="top", fill="both", expand=True)
+        raw_canvas.draw()
+
+        fit_frame = ttk.Frame(win)
+        fit_frame.pack(side="top", fill="both", expand=True)
+        fit_canvas = FigureCanvasTkAgg(plots.make_fit_overlay_figure(fit), master=fit_frame)
+        fit_toolbar_frame = ttk.Frame(fit_frame)
+        fit_toolbar_frame.pack(side="top", fill="x")
+        NavigationToolbar2Tk(fit_canvas, fit_toolbar_frame).update()
+        fit_canvas.get_tk_widget().pack(side="top", fill="both", expand=True)
+        fit_canvas.draw()
 
     def _build_run_panel(self, parent):
         panel = ttk.Frame(parent, padding=(10, 6))

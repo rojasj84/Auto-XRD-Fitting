@@ -36,6 +36,19 @@ class SwarmRunConfig:
     backend: str = "auto"
     seed: Optional[int] = None
     max_workers: Optional[int] = None
+    # "isotropic" (default) or "uniaxial" — see gsas2_swarm_logic.
+    # build_param_specs' mustrain_type docstring: isotropic is the
+    # default because uniaxial Mustrain and isotropic Size are confirmed
+    # ~98% correlated on real data, causing most of a swarm run's
+    # "insane" perturbations.
+    mustrain_type: str = "isotropic"
+    # Off by default: every candidate's saved GSAS-II project gets
+    # deleted immediately once it's known to have lost (only the current
+    # best is kept, then copied to a clean best.gpx at the end) — a real
+    # run's full evaluation tree otherwise reaches hundreds of MB to
+    # multiple GB, confirmed on real runs. See gsas2_swarm_optimize.py's
+    # --keep-evaluations help text.
+    keep_evaluations: bool = False
     # Fit-range trimming (see gsas2_swarm_logic.build_param_specs's
     # docstring for why these default to None/off, and why the bounds
     # matter a lot: too wide a range lets the search cherry-pick around a
@@ -99,7 +112,8 @@ def build_swarm_command(cfg: SwarmRunConfig, script_path: str, python_exe: str =
            "--perturbations", str(cfg.perturbations),
            "--surrogate-particles", str(cfg.surrogate_particles),
            "--surrogate-generations", str(cfg.surrogate_generations),
-           "--backend", cfg.backend]
+           "--backend", cfg.backend,
+           "--mustrain-type", cfg.mustrain_type]
     if cfg.seed is not None:
         cmd += ["--seed", str(cfg.seed)]
     if cfg.max_workers is not None:
@@ -110,6 +124,8 @@ def build_swarm_command(cfg: SwarmRunConfig, script_path: str, python_exe: str =
     if cfg.high_angle_cutoff_bounds is not None:
         cmd += ["--high-angle-cutoff-bounds",
                 str(cfg.high_angle_cutoff_bounds[0]), str(cfg.high_angle_cutoff_bounds[1])]
+    if cfg.keep_evaluations:
+        cmd.append("--keep-evaluations")
     cmd.append("--emit-events")
     return cmd
 

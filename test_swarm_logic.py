@@ -26,12 +26,19 @@ def check(label, condition):
 
 
 def test_build_param_specs():
+    """
+    mustrain_type defaults to "isotropic" (one free Mustrain value per
+    phase) -- see build_param_specs' docstring for why: uniaxial Mustrain
+    and isotropic Size are confirmed ~98%% correlated on real data, and
+    isotropic-by-default removes that degenerate pairing at the source.
+    See test_build_param_specs_uniaxial_mustrain for the explicit opt-in.
+    """
     specs = logic.build_param_specs(2, size_bounds=(0.1, 100.0), mustrain_bounds=(1.0, 5000.0))
-    check("3 params per phase x 2 phases = 6 specs", len(specs) == 6)
-    check("order is phase0(size,eq,ax), phase1(size,eq,ax)",
+    check("2 params per phase (isotropic default) x 2 phases = 4 specs", len(specs) == 4)
+    check("order is phase0(size,mustrain), phase1(size,mustrain)",
           [(s.phase_index, s.name) for s in specs] == [
-              (0, "size"), (0, "mustrain_eq"), (0, "mustrain_ax"),
-              (1, "size"), (1, "mustrain_eq"), (1, "mustrain_ax"),
+              (0, "size"), (0, "mustrain"),
+              (1, "size"), (1, "mustrain"),
           ])
     check("size bounds applied", specs[0].lo == 0.1 and specs[0].hi == 100.0)
     check("mustrain bounds applied", specs[1].lo == 1.0 and specs[1].hi == 5000.0)
@@ -39,13 +46,36 @@ def test_build_param_specs():
           all(s.kind == "multiplicative" for s in specs))
 
     check("low_angle_cutoff_bounds=None (the default) adds no extra dimension",
-          len(logic.build_param_specs(2)) == 6)
+          len(logic.build_param_specs(2)) == 4)
+
+    try:
+        logic.build_param_specs(1, mustrain_type="quadraxial")
+        check("an unknown mustrain_type raises ValueError", False)
+    except ValueError:
+        check("an unknown mustrain_type raises ValueError", True)
+
+
+def test_build_param_specs_uniaxial_mustrain():
+    """The explicit opt-in for anisotropic microstrain broadening --
+    reproduces the pre-isotropic-default 3-params-per-phase shape."""
+    specs = logic.build_param_specs(2, size_bounds=(0.1, 100.0), mustrain_bounds=(1.0, 5000.0),
+                                     mustrain_type="uniaxial")
+    check("3 params per phase (uniaxial) x 2 phases = 6 specs", len(specs) == 6)
+    check("order is phase0(size,eq,ax), phase1(size,eq,ax)",
+          [(s.phase_index, s.name) for s in specs] == [
+              (0, "size"), (0, "mustrain_eq"), (0, "mustrain_ax"),
+              (1, "size"), (1, "mustrain_eq"), (1, "mustrain_ax"),
+          ])
+    check("mustrain bounds applied to both eq and ax",
+          specs[1].lo == 1.0 and specs[1].hi == 5000.0
+          and specs[2].lo == 1.0 and specs[2].hi == 5000.0)
 
 
 def test_build_param_specs_low_angle_cutoff():
     specs = logic.build_param_specs(2, low_angle_cutoff_bounds=(0.0, 30.0))
-    check("adds exactly one extra whole-histogram dimension",
-          len(specs) == 7)
+    check("adds exactly one extra whole-histogram dimension "
+          "(4 base isotropic-default dims + 1 cutoff)",
+          len(specs) == 5)
     cutoff_spec = specs[-1]
     check("the extra dimension is phase_index=None (not tied to any one phase)",
           cutoff_spec.phase_index is None)
@@ -58,10 +88,18 @@ def test_build_param_specs_low_angle_cutoff():
 
 
 def test_position_to_values():
-    specs = logic.build_param_specs(2)
-    position = [10.0, 200.0, 300.0, 20.0, 400.0, 500.0]
+    specs = logic.build_param_specs(2)  # isotropic default: 2 dims/phase
+    position = [10.0, 200.0, 20.0, 400.0]
     values = logic.position_to_values(position, specs)
     check("both phases present", set(values) == {"0", "1"})
+    check("phase 0 values correct", values["0"] == {"size": 10.0, "mustrain": 200.0})
+    check("phase 1 values correct", values["1"] == {"size": 20.0, "mustrain": 400.0})
+
+
+def test_position_to_values_uniaxial_mustrain():
+    specs = logic.build_param_specs(2, mustrain_type="uniaxial")
+    position = [10.0, 200.0, 300.0, 20.0, 400.0, 500.0]
+    values = logic.position_to_values(position, specs)
     check("phase 0 values correct",
           values["0"] == {"size": 10.0, "mustrain_eq": 200.0, "mustrain_ax": 300.0})
     check("phase 1 values correct",
@@ -70,10 +108,10 @@ def test_position_to_values():
 
 def test_position_to_values_low_angle_cutoff():
     specs = logic.build_param_specs(1, low_angle_cutoff_bounds=(0.0, 30.0))
-    position = [10.0, 200.0, 300.0, 12.5]
+    position = [10.0, 200.0, 12.5]
     values = logic.position_to_values(position, specs)
     check("phase 0 values still nested under its phase key",
-          values["0"] == {"size": 10.0, "mustrain_eq": 200.0, "mustrain_ax": 300.0})
+          values["0"] == {"size": 10.0, "mustrain": 200.0})
     check("low_angle_cutoff lands at the TOP level, not nested under a phase",
           values[logic.LOW_ANGLE_CUTOFF_PARAM] == 12.5)
 
@@ -87,7 +125,7 @@ def test_perturb_points_low_angle_cutoff_moves_away_from_a_zero_seed():
     actually searched despite being a requested dimension.
     """
     specs = logic.build_param_specs(1, low_angle_cutoff_bounds=(0.0, 30.0))
-    x0 = np.array([10.0, 1000.0, 1000.0, 0.0])  # the real seed gsas2_swarm_optimize.py uses
+    x0 = np.array([10.0, 1000.0, 0.0])  # the real seed gsas2_swarm_optimize.py uses (isotropic default)
     rng = np.random.default_rng(4)
     points = logic.perturb_points(x0, specs, n=200, rng=rng, far_sigma=0.9)
     cutoff_values = points[:, -1]
@@ -98,7 +136,7 @@ def test_perturb_points_low_angle_cutoff_moves_away_from_a_zero_seed():
     check("every sampled low_angle_cutoff stays within its declared bounds",
           bool(np.all((cutoff_values >= 0.0) & (cutoff_values <= 30.0))))
     check("Size/Mustrain dimensions are unaffected (still positive, still perturbed normally)",
-          bool(np.all(points[:, :3] > 0)))
+          bool(np.all(points[:, :2] > 0)))
 
 
 def test_build_param_specs_both_angle_cutoffs_together():
@@ -109,8 +147,9 @@ def test_build_param_specs_both_angle_cutoffs_together():
     """
     specs = logic.build_param_specs(1, low_angle_cutoff_bounds=(0.0, 15.0),
                                      high_angle_cutoff_bounds=(0.0, 10.0))
-    check("adds exactly two extra whole-histogram dimensions",
-          len(specs) == 5)
+    check("adds exactly two extra whole-histogram dimensions "
+          "(2 base isotropic-default dims + 2 cutoffs)",
+          len(specs) == 4)
     check("low_angle_cutoff comes before high_angle_cutoff",
           specs[-2].name == logic.LOW_ANGLE_CUTOFF_PARAM
           and specs[-1].name == logic.HIGH_ANGLE_CUTOFF_PARAM)
@@ -119,19 +158,19 @@ def test_build_param_specs_both_angle_cutoffs_together():
     check("high_angle_cutoff's bounds are as given",
           specs[-1].lo == 0.0 and specs[-1].hi == 10.0)
 
-    position = [10.0, 1000.0, 1000.0, 8.0, 4.0]
+    position = [10.0, 1000.0, 8.0, 4.0]
     values = logic.position_to_values(position, specs)
     check("both cutoffs land at the top level with their own values",
           values[logic.LOW_ANGLE_CUTOFF_PARAM] == 8.0
           and values[logic.HIGH_ANGLE_CUTOFF_PARAM] == 4.0)
 
-    x0 = np.array([10.0, 1000.0, 1000.0, 0.0, 0.0])
+    x0 = np.array([10.0, 1000.0, 0.0, 0.0])
     points = logic.perturb_points(x0, specs, n=200, rng=np.random.default_rng(6), far_sigma=0.9)
     check("both cutoff dimensions independently move away from their 0.0 seeds",
-          points[:, 3].std() > 0.0 and points[:, 4].std() > 0.0)
+          points[:, 2].std() > 0.0 and points[:, 3].std() > 0.0)
     check("both cutoff dimensions stay within their own (different) bounds",
-          bool(np.all((points[:, 3] >= 0.0) & (points[:, 3] <= 15.0)))
-          and bool(np.all((points[:, 4] >= 0.0) & (points[:, 4] <= 10.0))))
+          bool(np.all((points[:, 2] >= 0.0) & (points[:, 2] <= 15.0)))
+          and bool(np.all((points[:, 3] >= 0.0) & (points[:, 3] <= 10.0))))
 
 
 def test_evaluation_to_fitness():
@@ -186,11 +225,59 @@ def test_training_target():
           target == 6.5 + logic.SANE_PENALTY_MARGIN)
 
 
+def test_is_better_candidate():
+    """
+    Covers the peak-amplitude-error tie-breaker: Rwp stays the PRIMARY
+    criterion (a clearly-better or clearly-worse Rwp always wins/loses
+    outright, regardless of peak match), but when two candidates' Rwp
+    values are within tie_margin of each other, the one with the lower
+    peak_amplitude_error wins instead -- addresses a real scientist
+    concern that Rwp (intensity-weighted) can be dominated by one huge
+    peak while other peaks fit worse.
+    """
+    check("a clearly better Rwp wins outright, even with worse peak match",
+          logic.is_better_candidate(fit=5.0, peak_error=0.5,
+                                     best_fitness=6.0, best_peak_error=0.1,
+                                     tie_margin=0.05) is True)
+    check("a clearly worse Rwp loses outright, even with better peak match "
+          "(peak match can never override a real Rwp difference outside the margin)",
+          logic.is_better_candidate(fit=6.0, peak_error=0.05,
+                                     best_fitness=5.0, best_peak_error=0.5,
+                                     tie_margin=0.05) is False)
+
+    check("within tie_margin, lower peak_amplitude_error wins even though its Rwp "
+          "is slightly worse",
+          logic.is_better_candidate(fit=6.02, peak_error=0.10,
+                                     best_fitness=6.00, best_peak_error=0.30,
+                                     tie_margin=0.05) is True)
+    check("within tie_margin, higher peak_amplitude_error loses even though its Rwp "
+          "is slightly better",
+          logic.is_better_candidate(fit=6.00, peak_error=0.30,
+                                     best_fitness=6.02, best_peak_error=0.10,
+                                     tie_margin=0.05) is False)
+
+    check("exactly at the tie_margin boundary falls back to plain Rwp comparison "
+          "when peak_error is missing",
+          logic.is_better_candidate(fit=5.99, peak_error=None,
+                                     best_fitness=6.00, best_peak_error=None,
+                                     tie_margin=0.05) is True)
+    check("missing peak_error on either side falls back to plain Rwp comparison, "
+          "even within the tie margin",
+          logic.is_better_candidate(fit=6.02, peak_error=0.05,
+                                     best_fitness=6.00, best_peak_error=None,
+                                     tie_margin=0.05) is False)
+
+    check("tie_margin=0 disables the tie-breaker entirely (pure Rwp comparison)",
+          logic.is_better_candidate(fit=6.001, peak_error=0.01,
+                                     best_fitness=6.000, best_peak_error=0.99,
+                                     tie_margin=0.0) is False)
+
+
 def test_init_swarm_respects_bounds():
     specs = logic.build_param_specs(1, size_bounds=(1.0, 10.0), mustrain_bounds=(100.0, 200.0))
     rng = np.random.default_rng(0)
     swarm = logic.init_swarm(specs, n_particles=50, rng=rng)
-    check("positions shape is (n_particles, n_dims)", swarm.positions.shape == (50, 3))
+    check("positions shape is (n_particles, n_dims)", swarm.positions.shape == (50, 2))
     check("every initial position is within its dimension's bounds",
           bool(np.all(swarm.positions >= swarm.lo) and np.all(swarm.positions <= swarm.hi)))
     check("pbest starts as a copy of the initial positions",
@@ -238,13 +325,14 @@ def test_pso_converges_on_a_known_function():
     """
     The strongest correctness check for the optimizer itself, independent
     of anything GSAS-II-specific: run the full PSO loop against a plain
-    synthetic function with a known minimum (a shifted 3D sphere/bowl —
-    same dimensionality as one real phase's Size/Mustrain search space)
-    and confirm it actually finds it. If this test passes, the PSO math
-    itself is correct; gsas2_swarm_worker.py is then the only thing
-    standing between this and a real refinement.
+    synthetic function with a known minimum (a shifted 2D sphere/bowl —
+    same dimensionality as one real phase's Size/Mustrain search space
+    under the isotropic-Mustrain default) and confirm it actually finds
+    it. If this test passes, the PSO math itself is correct; gsas2_swarm_
+    worker.py is then the only thing standing between this and a real
+    refinement.
     """
-    true_minimum = np.array([300.0, 3000.0, 5000.0])  # plausible real Size/Mustrain values
+    true_minimum = np.array([300.0, 3000.0])  # plausible real Size/Mustrain values
     specs = logic.build_param_specs(1, size_bounds=(0.01, 1000.0), mustrain_bounds=(0.01, 9000.0))
 
     def fitness_fn(positions: np.ndarray) -> np.ndarray:
@@ -276,12 +364,12 @@ def test_pso_converges_on_a_known_function():
 
 def test_perturb_points():
     specs = logic.build_param_specs(1, size_bounds=(0.01, 1000.0), mustrain_bounds=(0.01, 9000.0))
-    x0 = np.array([10.0, 1000.0, 1000.0])
+    x0 = np.array([10.0, 1000.0])
     rng = np.random.default_rng(3)
     points = logic.perturb_points(x0, specs, n=200, rng=rng, frac_close=0.6,
                                    close_sigma=0.15, far_sigma=0.75)
 
-    check("returns the requested number of points", points.shape == (200, 3))
+    check("returns the requested number of points", points.shape == (200, 2))
     lo = np.array([s.lo for s in specs])
     hi = np.array([s.hi for s in specs])
     check("every perturbed point stays within bounds",
@@ -357,7 +445,12 @@ def test_fit_surrogate_ridge_regularization():
     must NOT drag predictions toward 0.
     """
     rng = np.random.default_rng(3)
-    specs = logic.build_param_specs(1, size_bounds=(0.01, 1000.0), mustrain_bounds=(0.01, 9000.0))
+    # mustrain_type="uniaxial" explicitly here: this test's whole point is
+    # exercising a specific 3-dim/10-term sparse-fit regime (see n_terms
+    # below), independent of which mustrain_type happens to be the
+    # swarm's own default.
+    specs = logic.build_param_specs(1, size_bounds=(0.01, 1000.0), mustrain_bounds=(0.01, 9000.0),
+                                     mustrain_type="uniaxial")
     n_terms = len(logic._poly_terms(3, 2))  # 10
 
     x0 = np.array([300.0, 3000.0, 5000.0])
@@ -371,16 +464,17 @@ def test_fit_surrogate_ridge_regularization():
     model_unreg = logic.fit_surrogate(X, y, degree=2, backend="cpu", ridge_alpha=0.0)
     model_reg = logic.fit_surrogate(X, y, degree=2, backend="cpu", ridge_alpha=5.0)
 
-    check("ridge_alpha=0 reproduces plain (manual) OLS exactly",
+    check("ridge_alpha=0 reproduces plain (manual) OLS exactly (fit against log(y) — "
+          "see fit_surrogate's docstring for why)",
           np.allclose(model_unreg.coeffs,
                       np.linalg.lstsq(logic._poly_features_numpy(
                           (X - X.mean(axis=0)) / np.where(X.std(axis=0) == 0, 1.0, X.std(axis=0)),
-                          logic._poly_terms(3, 2)), y, rcond=None)[0]))
+                          logic._poly_terms(3, 2)), np.log(y), rcond=None)[0]))
     check("ridge regularization shrinks the fitted coefficients overall",
           np.linalg.norm(model_reg.coeffs) < np.linalg.norm(model_unreg.coeffs))
-    check("ridge regularization does NOT drag the intercept toward 0 "
-          "(it must stay near the data's actual ~6.0 baseline)",
-          abs(model_reg.coeffs[0] - 6.0) < 1.0)
+    check("ridge regularization does NOT drag the (log-space) intercept toward "
+          "exp(0)=1 (it must stay near the data's actual ~6.0 baseline)",
+          abs(np.exp(model_reg.coeffs[0]) - 6.0) < 1.0)
     check("ridge regularization increases training-point error (the standard "
           "bias/variance tradeoff -- it must not be a free lunch)",
           np.sqrt(np.mean((logic.predict_surrogate(model_reg, X) - y) ** 2))
@@ -396,25 +490,40 @@ def test_fit_surrogate_ridge_regularization():
 def test_fit_and_predict_surrogate_recovers_a_known_quadratic():
     """
     The strongest correctness check for the surrogate itself: sample a
-    KNOWN quadratic function (no noise) at enough points, fit a degree-2
-    surrogate to those samples, and confirm it predicts that same
-    function accurately at NEW, unseen points — i.e. the fit actually
-    recovered the underlying shape, not just memorized the training
-    points. ridge_alpha=0 (plain OLS) here deliberately — with 60 clean,
-    noiseless points for 10 coefficients there's nothing to regularize
-    against, and this test's whole point is isolating "does the design-
-    matrix/least-squares math itself work" from the bias/variance
-    tradeoff ridge_alpha introduces (see test_fit_surrogate_ridge_
-    regularization for that).
+    KNOWN function (no noise) at enough points, fit a degree-2 surrogate
+    to those samples, and confirm it predicts that same function
+    accurately at NEW, unseen points — i.e. the fit actually recovered
+    the underlying shape, not just memorized the training points.
+
+    The true function is exp(quadratic), not a bare quadratic — matching
+    what fit_surrogate() actually models now (see its docstring: it fits
+    log(y) ~ polynomial(x) so every prediction is positive by
+    construction, since real Rwp values can never be negative). log(this
+    true_fn) is EXACTLY a quadratic in x, so a correct log-space fit
+    should recover it just as precisely as the old direct-quadratic test
+    did — this isn't a loosened tolerance, it's testing against the
+    actual functional form being fit. ridge_alpha=0 (plain OLS)
+    deliberately — with 60 clean, noiseless points for 10 coefficients
+    there's nothing to regularize against, and this test's whole point is
+    isolating "does the design-matrix/least-squares math itself work"
+    from the bias/variance tradeoff ridge_alpha introduces (see
+    test_fit_surrogate_ridge_regularization for that).
     """
     rng = np.random.default_rng(7)
     true_minimum = np.array([300.0, 3000.0, 5000.0])
     curvature = np.array([1.0, 0.5, 2.0])
+    # mustrain_type="uniaxial": this test's 3-dim shape/curvature array
+    # predate the isotropic default and aren't about mustrain semantics.
+    specs = logic.build_param_specs(1, size_bounds=(0.01, 1000.0), mustrain_bounds=(0.01, 9000.0),
+                                     mustrain_type="uniaxial")
+    span = np.array([s.hi - s.lo for s in specs])
 
     def true_fn(X: np.ndarray) -> np.ndarray:
-        return np.sum(curvature * (X - true_minimum) ** 2, axis=1) + 6.0  # +6.0 ~ a baseline Rwp
+        # Normalized deviation keeps the exponent's argument modest (no
+        # overflow) regardless of Size/Mustrain's very different raw
+        # scales — 6.0 ~ a baseline Rwp at the true minimum itself.
+        return 6.0 * np.exp(np.sum(curvature * ((X - true_minimum) / span) ** 2, axis=1))
 
-    specs = logic.build_param_specs(1, size_bounds=(0.01, 1000.0), mustrain_bounds=(0.01, 9000.0))
     X_train = logic.perturb_points(true_minimum, specs, n=60, rng=rng,
                                     frac_close=0.5, close_sigma=0.2, far_sigma=0.6)
     y_train = true_fn(X_train)
@@ -430,6 +539,9 @@ def test_fit_and_predict_surrogate_recovers_a_known_quadratic():
     max_relative_error = np.max(np.abs(y_test_pred - y_test_true) / y_test_true)
     check("the surrogate predicts unseen points within 5% of the true (noiseless) function",
           max_relative_error < 0.05)
+    check("every prediction is strictly positive (guaranteed by construction, not just "
+          "true for this particular function)",
+          bool(np.all(y_test_pred > 0)))
 
 
 def test_search_surrogate_finds_the_fitted_minimum():
@@ -443,11 +555,17 @@ def test_search_surrogate_finds_the_fitted_minimum():
     """
     rng = np.random.default_rng(11)
     true_minimum = np.array([300.0, 3000.0, 5000.0])
-    specs = logic.build_param_specs(1, size_bounds=(0.01, 1000.0), mustrain_bounds=(0.01, 9000.0))
+    # mustrain_type="uniaxial": this test's 3-dim true_minimum predates the
+    # isotropic default and isn't about mustrain semantics.
+    specs = logic.build_param_specs(1, size_bounds=(0.01, 1000.0), mustrain_bounds=(0.01, 9000.0),
+                                     mustrain_type="uniaxial")
+    baseline = 0.01  # a small but strictly positive "Rwp at the true minimum" —
+    # fit_surrogate requires y > 0 (see its docstring: it fits log(y)), so this
+    # can't be exactly 0 the way a bare quadratic bowl's minimum would be.
 
     def true_fn(X: np.ndarray) -> np.ndarray:
         span = np.array([s.hi - s.lo for s in specs])
-        return np.sum(((X - true_minimum) / span) ** 2, axis=1)
+        return baseline * np.exp(np.sum(((X - true_minimum) / span) ** 2, axis=1))
 
     X_train = logic.perturb_points(true_minimum, specs, n=60, rng=rng,
                                     frac_close=0.5, close_sigma=0.3, far_sigma=0.9)
@@ -467,8 +585,11 @@ def test_search_surrogate_finds_the_fitted_minimum():
     relative_error = np.abs(best_position - true_minimum) / span
     check("search_surrogate finds a point within 5% of the true minimum (via the fitted surrogate)",
           bool(np.all(relative_error < 0.05)))
-    check("the predicted fitness at that point is near zero (the true minimum's value)",
-          best_predicted < 1e-2)
+    check("the predicted fitness at that point is close to the true minimum's own "
+          f"value ({baseline}), not near some unrelated number",
+          best_predicted < baseline * 3)
+    check("the predicted fitness is strictly positive (guaranteed by construction)",
+          best_predicted > 0)
 
 
 def test_explorer_particles_pull_more_weakly():
@@ -523,7 +644,11 @@ def test_select_diverse_candidates():
     since the selection LOGIC itself (not emergent swarm dynamics) is
     what this needs to verify reliably.
     """
-    specs = logic.build_param_specs(1, size_bounds=(0.01, 1000.0), mustrain_bounds=(0.01, 9000.0))
+    # mustrain_type="uniaxial": this test's 3-dim hand-built positions
+    # below predate the isotropic default and aren't about mustrain
+    # semantics.
+    specs = logic.build_param_specs(1, size_bounds=(0.01, 1000.0), mustrain_bounds=(0.01, 9000.0),
+                                     mustrain_type="uniaxial")
     model = logic.fit_surrogate(
         logic.perturb_points(np.array([300.0, 3000.0, 5000.0]), specs, n=20,
                               rng=np.random.default_rng(1)),
@@ -570,11 +695,17 @@ def test_search_surrogate_n_candidates_wiring():
     weakly for the pull mechanism.
     """
     true_minimum = np.array([300.0, 3000.0, 5000.0])
-    specs = logic.build_param_specs(1, size_bounds=(0.01, 1000.0), mustrain_bounds=(0.01, 9000.0))
+    # mustrain_type="uniaxial": this test's 3-dim true_minimum predates
+    # the isotropic default and isn't about mustrain semantics.
+    specs = logic.build_param_specs(1, size_bounds=(0.01, 1000.0), mustrain_bounds=(0.01, 9000.0),
+                                     mustrain_type="uniaxial")
     span = np.array([s.hi - s.lo for s in specs])
 
     def true_fn(X):
-        return np.sum(((X - true_minimum) / span) ** 2, axis=1)
+        # baseline > 0 -- fit_surrogate requires strictly positive
+        # targets (it fits log(y), see its docstring); a bare quadratic
+        # bowl would hit exactly 0 at true_minimum.
+        return 0.01 * np.exp(np.sum(((X - true_minimum) / span) ** 2, axis=1))
 
     X_train = logic.perturb_points(true_minimum, specs, n=60, rng=np.random.default_rng(9),
                                     frac_close=0.5, close_sigma=0.3, far_sigma=0.9)
@@ -604,7 +735,11 @@ def test_trust_region_specs():
     because a quadratic fit to one small data patch is meaningless far
     outside it.
     """
-    specs = logic.build_param_specs(1, size_bounds=(0.01, 1000.0), mustrain_bounds=(0.01, 9000.0))
+    # mustrain_type="uniaxial": this test's 3-dim hand-built training
+    # data predates the isotropic default and isn't about mustrain
+    # semantics.
+    specs = logic.build_param_specs(1, size_bounds=(0.01, 1000.0), mustrain_bounds=(0.01, 9000.0),
+                                     mustrain_type="uniaxial")
     # Training data all clustered in a small patch, far from the full bounds.
     X = np.array([
         [295.0, 2950.0, 4950.0],
@@ -632,13 +767,16 @@ def test_trust_region_specs():
 
 if __name__ == "__main__":
     test_build_param_specs()
+    test_build_param_specs_uniaxial_mustrain()
     test_build_param_specs_low_angle_cutoff()
     test_position_to_values()
+    test_position_to_values_uniaxial_mustrain()
     test_position_to_values_low_angle_cutoff()
     test_perturb_points_low_angle_cutoff_moves_away_from_a_zero_seed()
     test_build_param_specs_both_angle_cutoffs_together()
     test_evaluation_to_fitness()
     test_training_target()
+    test_is_better_candidate()
     test_init_swarm_respects_bounds()
     test_update_swarm_tracks_best()
     test_has_converged()

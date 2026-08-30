@@ -138,6 +138,29 @@ def test_build_swarm_command_includes_every_knob():
     check("seed passed through", "--seed" in cmd and "123" in cmd)
     check("max-workers passed through", "--max-workers" in cmd and "8" in cmd)
     check("--emit-events always included", "--emit-events" in cmd)
+    check("mustrain_type defaults to isotropic and is always passed through",
+          "--mustrain-type" in cmd and "isotropic" in cmd)
+
+
+def test_build_swarm_command_uniaxial_mustrain_type():
+    cfg = logic.SwarmRunConfig(checkpoint="c.gpx", gsasii_path="/opt/GSASII", outdir="out",
+                                mustrain_type="uniaxial")
+    cmd = logic.build_swarm_command(cfg, script_path="gsas2_swarm_optimize.py")
+    check("uniaxial mustrain_type passed through",
+          "--mustrain-type" in cmd and "uniaxial" in cmd)
+
+
+def test_build_swarm_command_keep_evaluations():
+    cfg_default = logic.SwarmRunConfig(checkpoint="c.gpx", gsasii_path="/opt/GSASII", outdir="out")
+    cmd_default = logic.build_swarm_command(cfg_default, script_path="gsas2_swarm_optimize.py")
+    check("keep_evaluations=False (the default) omits --keep-evaluations",
+          "--keep-evaluations" not in cmd_default)
+
+    cfg_keep = logic.SwarmRunConfig(checkpoint="c.gpx", gsasii_path="/opt/GSASII", outdir="out",
+                                     keep_evaluations=True)
+    cmd_keep = logic.build_swarm_command(cfg_keep, script_path="gsas2_swarm_optimize.py")
+    check("keep_evaluations=True includes --keep-evaluations",
+          "--keep-evaluations" in cmd_keep)
 
 
 def test_build_swarm_command_omits_optional_none_fields():
@@ -187,6 +210,8 @@ if __name__ == "__main__":
     test_validate_swarm_config_allows_blank_max_workers()
     test_validate_swarm_config_catches_bad_angle_cutoff_bounds()
     test_build_swarm_command_includes_every_knob()
+    test_build_swarm_command_uniaxial_mustrain_type()
+    test_build_swarm_command_keep_evaluations()
     test_build_swarm_command_omits_optional_none_fields()
     test_build_swarm_command_includes_angle_cutoff_bounds()
     test_auto_swarm_outdir_is_next_to_the_checkpoint_and_timestamped()

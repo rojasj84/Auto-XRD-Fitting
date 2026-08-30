@@ -1,0 +1,60 @@
+{
+  "checkpoint": "/home/javierrojas/AI Work/Auto XRD Fitting/Data/FeF3/results_20260830_181059/checkpoint_08_pre_preferred_orientation.gpx",
+  "n_phases": 1,
+  "backend": "gpu",
+  "outer_iterations_run": 6,
+  "dataset_size": 307,
+  "fitness_history": [
+    6.314285787050975,
+    6.292395325874136,
+    6.2988666975868775,
+    6.299021114484383,
+    6.312466030706262,
+    6.300724545330912,
+    6.29880969400107
+  ],
+  "best_values": {
+    "0": {
+      "size": 546.614022346107,
+      "mustrain": 9000.0
+    }
+  },
+  "best_result": {
+    "rwp": 6.29880969400107,
+    "sane": true,
+    "error": null,
+    "final": {
+      "0": {
+        "size": 10.0,
+        "mustrain": 8393.886649439146
+      }
+    },
+    "peak_amplitude_error": 0.3089412176816053
+  },
+  "final_rwp": 6.29880969400107,
+  "final_peak_amplitude_error": 0.3089412176816053,
+  "cells": {
+    "fef3_r3c_ambient": {
+      "length_a": 5.1610510679743715,
+      "length_b": 5.1610510679743715,
+      "length_c": 13.319312950238361,
+      "angle_alpha": 90.0,
+      "angle_beta": 90.0,
+      "angle_gamma": 120.00000000000001,
+      "volume": 307.2477899543931
+    }
+  },
+  "cell_esds": {
+    "fef3_r3c_ambient": {
+      "length_a": 0.0012734541900836494,
+      "length_b": 0.0012734541900836494,
+      "length_c": 0.0037885967253947447,
+      "angle_alpha": 0.0,
+      "angle_beta": 0.0,
+      "angle_gamma": 0.0,
+      "volume": 0.04190113395254383
+    }
+  },
+  "pattern_raw_csv": "/home/javierrojas/AI Work/Auto XRD Fitting/Data/FeF3/results_20260830_181059/swarm_20260830_181118/pattern_raw.csv",
+  "fit_final_csv": "/home/javierrojas/AI Work/Auto XRD Fitting/Data/FeF3/results_20260830_181059/swarm_20260830_181118/fit_final.csv"
+}

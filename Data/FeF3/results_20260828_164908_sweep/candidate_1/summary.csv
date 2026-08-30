@@ -1,9 +1,0 @@
-stage,status,rwp_before,rwp_after
-background_scale,ok,99.94021807035007,100.0
-sample_displacement,ok,100.0,100.0
-unit_cell,failed_error,100.0,nan
-profile_instrument,ok,100.0,100.0
-peak_asymmetry,failed_bounds,100.0,100.0
-profile_microstrain_size,ok,100.0,15.684379435965196
-extinction,ok,15.684379435965196,6.263813769531105
-preferred_orientation,failed_error,6.263813769531105,nan

@@ -1,9 +1,0 @@
-  [scale-seed] starting phase Scale(s) rescaled 0.0727x (calculated peak heights were too large relative to the data)
-  [background_scale] ok (Rwp 100.000 -> 27.681)
-  [sample_displacement] ok (Rwp 27.681 -> 27.606)
-  [unit_cell] ok (Rwp 27.606 -> 27.524)
-  [profile_instrument] ok (Rwp 27.524 -> 18.338)
-  [peak_asymmetry] ok (Rwp 18.338 -> 14.085)
-  [profile_microstrain_size] ok (Rwp 14.085 -> 13.889)
-  [extinction] failed bounds check (Rwp 13.889 -> 14.402) — reverting to checkpoint
-  [preferred_orientation (fallback: pref_ori_111)] failed bounds check (Rwp 13.889 -> 100.000) — reverting to checkpoint

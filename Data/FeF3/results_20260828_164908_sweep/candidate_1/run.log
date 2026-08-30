@@ -1,9 +1,0 @@
-  [scale-seed] starting phase Scale(s) rescaled 200x (calculated peak heights were too small relative to the data)
-  [background_scale] ok (Rwp 99.940 -> 100.000)
-  [sample_displacement] ok (Rwp 100.000 -> 100.000)
-  [unit_cell] raised RuntimeError("GSAS-II solver reported an internal failure ('Refinement failed') that do_refinements() did not raise on") — reverting to checkpoint
-  [profile_instrument] ok (Rwp 100.000 -> 100.000)
-  [peak_asymmetry] failed bounds check (Rwp 100.000 -> 100.000) — reverting to checkpoint
-  [profile_microstrain_size (fallback: size_only)] ok (Rwp 100.000 -> 15.684)
-  [extinction] ok (Rwp 15.684 -> 6.264)
-  [preferred_orientation (fallback: pref_ori_111)] raised RuntimeError("GSAS-II solver reported an internal failure ('Refinement failed') that do_refinements() did not raise on") — reverting to checkpoint

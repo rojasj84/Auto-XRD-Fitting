@@ -1,9 +1,0 @@
-  [limits] fitting restricted to [30.0, 80.0]
-  [scale-seed] starting phase Scale(s) rescaled 0.0731x (calculated peak heights were too large relative to the data)
-  [background_scale] ok (Rwp 100.000 -> 34.065)
-  [sample_displacement] ok (Rwp 34.065 -> 34.063)
-  [unit_cell] ok (Rwp 34.063 -> 34.049)
-  [profile_instrument] ok (Rwp 34.049 -> 20.469)
-  [profile_microstrain_size] ok (Rwp 20.469 -> 16.256)
-  [preferred_orientation (fallback: pref_ori_111)] raised RuntimeError("GSAS-II solver reported an internal failure ('Refinement failed') that do_refinements() did not raise on") — reverting to checkpoint
-  [atoms] raised RuntimeError("GSAS-II solver reported an internal failure ('Refinement failed') that do_refinements() did not raise on") — reverting to checkpoint

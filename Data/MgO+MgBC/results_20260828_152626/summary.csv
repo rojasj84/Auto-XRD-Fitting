@@ -1,8 +1,0 @@
-stage,status,rwp_before,rwp_after
-background_scale,ok,100.0,34.06515212344779
-sample_displacement,ok,34.06515212344779,34.063484774540875
-unit_cell,ok,34.063484774540875,34.049491366802656
-profile_instrument,ok,34.049491366802656,20.46936337729818
-profile_microstrain_size,ok,20.46936337729818,16.25599077822621
-preferred_orientation,failed_error,16.25599077822621,nan
-atoms,failed_error,16.25599077822621,nan

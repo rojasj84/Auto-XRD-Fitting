@@ -1,0 +1,35 @@
+{
+  "checkpoint": "/home/javierrojas/AI Work/Auto XRD Fitting/Data/FeF3/results_20260830_141321/final.gpx",
+  "n_phases": 1,
+  "backend": "gpu",
+  "outer_iterations_run": 6,
+  "dataset_size": 95,
+  "fitness_history": [
+    10000.0,
+    6.298731711880087,
+    6.295407923622433,
+    6.295407923622433,
+    6.294043325074246,
+    6.284344681765511,
+    6.276927210145239
+  ],
+  "best_values": {
+    "0": {
+      "size": 105.65192403110659,
+      "mustrain_eq": 2805.080498176301,
+      "mustrain_ax": 3045.7160073560053
+    }
+  },
+  "best_result": {
+    "rwp": 6.276927210145239,
+    "sane": true,
+    "error": null,
+    "final": {
+      "0": {
+        "size": 10.0,
+        "mustrain_eq": 6643.799345611379,
+        "mustrain_ax": 3667.684419095631
+      }
+    }
+  }
+}

@@ -1,0 +1,35 @@
+{
+  "checkpoint": "/home/javierrojas/AI Work/Auto XRD Fitting/Data/FeF3/results_20260830_143801/checkpoint_06_pre_profile_microstrain_size.gpx",
+  "n_phases": 1,
+  "backend": "gpu",
+  "outer_iterations_run": 6,
+  "dataset_size": 607,
+  "fitness_history": [
+    6.314781168314799,
+    6.308159980407341,
+    6.301375439427169,
+    6.2992512844871325,
+    6.299220945460829,
+    6.299220945460829,
+    6.299220945460829
+  ],
+  "best_values": {
+    "0": {
+      "size": 9.643008125519655,
+      "mustrain_eq": 553.0162585748394,
+      "mustrain_ax": 490.50932624446494
+    }
+  },
+  "best_result": {
+    "rwp": 6.299220945460829,
+    "sane": true,
+    "error": null,
+    "final": {
+      "0": {
+        "size": 10.0,
+        "mustrain_eq": 6482.275423770652,
+        "mustrain_ax": 3008.266822250028
+      }
+    }
+  }
+}

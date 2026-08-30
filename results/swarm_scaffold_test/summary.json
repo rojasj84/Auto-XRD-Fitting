@@ -1,0 +1,114 @@
+{
+  "pattern": "Data/FeF3/r3c 20.txt",
+  "instprm": "Data/FeF3/ws2.cu.prm",
+  "phases": [
+    "Data/FeF3/fef3_r3c_ambient.cif"
+  ],
+  "stages": [
+    {
+      "name": "background_scale",
+      "status": "ok",
+      "rwp_before": 99.97606669953883,
+      "rwp_after": 8.303607670481805,
+      "detail": "",
+      "optional": false
+    },
+    {
+      "name": "sample_displacement",
+      "status": "ok",
+      "rwp_before": 8.303607670481805,
+      "rwp_after": 8.303607670481805,
+      "detail": "",
+      "optional": false
+    },
+    {
+      "name": "unit_cell",
+      "status": "ok",
+      "rwp_before": 8.303607670481805,
+      "rwp_after": 7.49701005911239,
+      "detail": "",
+      "optional": false
+    },
+    {
+      "name": "profile_instrument",
+      "status": "ok",
+      "rwp_before": 7.49701005911239,
+      "rwp_after": 6.098400980471068,
+      "detail": "",
+      "optional": false
+    },
+    {
+      "name": "peak_asymmetry",
+      "status": "failed_bounds",
+      "rwp_before": 6.098400980471068,
+      "rwp_after": 6.097388011360386,
+      "detail": "",
+      "optional": true
+    },
+    {
+      "name": "profile_microstrain_size",
+      "status": "ok",
+      "rwp_before": 6.098400980471068,
+      "rwp_after": 6.066150741527891,
+      "detail": "",
+      "optional": false
+    },
+    {
+      "name": "extinction",
+      "status": "failed_bounds",
+      "rwp_before": 6.066150741527891,
+      "rwp_after": 6.203244809986764,
+      "detail": "",
+      "optional": true
+    },
+    {
+      "name": "preferred_orientation",
+      "status": "failed_bounds",
+      "rwp_before": 6.066150741527891,
+      "rwp_after": 6.08126278333237,
+      "detail": "",
+      "optional": true
+    }
+  ],
+  "final_rwp": 6.066150741527891,
+  "fit_quality": {
+    "calc_obs_correlation": 0.9360033501666843,
+    "needs_review": false,
+    "reason": ""
+  },
+  "cells": {
+    "fef3_r3c_ambient": {
+      "length_a": 5.161762012513642,
+      "length_b": 5.161762012513642,
+      "length_c": 13.316596608357148,
+      "angle_alpha": 90.0,
+      "angle_beta": 90.0,
+      "angle_gamma": 120.00000000000001,
+      "volume": 307.26976630594345
+    }
+  },
+  "cell_esds": {
+    "fef3_r3c_ambient": {
+      "length_a": 0.0009400840474661503,
+      "length_b": 0.0009400840474661503,
+      "length_c": 0.002759225751327487,
+      "angle_alpha": 0.0,
+      "angle_beta": 0.0,
+      "angle_gamma": 0.0,
+      "volume": 0.03207473791778053
+    }
+  },
+  "limits_full_range": [
+    5.0,
+    80.0
+  ],
+  "limits_applied": [
+    5.0,
+    80.0
+  ],
+  "pattern_raw_csv": "results/swarm_scaffold_test/pattern_raw.csv",
+  "fit_final_csv": "results/swarm_scaffold_test/fit_final.csv",
+  "refined_cifs": [
+    "results/swarm_scaffold_test/refined_phase_0_fef3_r3c_ambient.cif"
+  ]
+}

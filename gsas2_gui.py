@@ -32,6 +32,7 @@ import queue
 import subprocess
 import sys
 import threading
+import time
 from pathlib import Path
 
 
@@ -46,10 +47,12 @@ from matplotlib.widgets import SpanSelector  # noqa: E402
 
 import gsas2_gui_logic as logic  # noqa: E402
 import gsas2_plots as plots  # noqa: E402
+import gsas2_swarm_gui_logic as swarm_logic  # noqa: E402
 
 SCRIPT_DIR = Path(__file__).resolve().parent
 REFINE_SCRIPT = SCRIPT_DIR / "gsas2_auto_refine.py"
 SWEEP_SCRIPT = SCRIPT_DIR / "gsas2_candidate_sweep.py"
+SWARM_SCRIPT = SCRIPT_DIR / "gsas2_swarm_optimize.py"
 
 STAGE_LABELS = {
     "background_scale": "Background + scale",
@@ -133,6 +136,16 @@ def _no_window_kwargs() -> dict:
     return {}
 
 
+def _format_elapsed(seconds: float) -> str:
+    """Formats a duration for the Swarm tab's elapsed-time readout —
+    seconds with one decimal under a minute (so short test runs show
+    meaningful precision), minutes:seconds beyond that."""
+    if seconds < 60:
+        return f"{seconds:.1f}s"
+    minutes, secs = divmod(int(seconds), 60)
+    return f"{minutes}m {secs:02d}s"
+
+
 def open_path(path: str) -> None:
     """Opens a file or folder in the OS's default handler. Best-effort —
     a failure here (unsupported platform, no handler configured) is
@@ -212,6 +225,17 @@ class App(tk.Tk):
         self.sweep_row_by_name: dict = {}
         self.sweep_outdir = None
 
+        # Swarm tab state (gsas2_swarm_optimize.py) — kept separate for the
+        # same reason as the Sweep tab above: its own subprocess, own
+        # progress shape (one row per outer iteration, not per stage or
+        # candidate), own outdir. self.swarm_start_time backs the elapsed-
+        # time readout, the main point of this tab (see its build method).
+        self.swarm_proc = None
+        self.swarm_event_queue: "queue.Queue" = queue.Queue()
+        self.swarm_outdir = None
+        self.swarm_start_time = None
+        self._swarm_outdir_auto = True
+
         self._build_widgets()
         self._prefill_from_config()
         self.protocol("WM_DELETE_WINDOW", self._on_close)
@@ -234,6 +258,7 @@ class App(tk.Tk):
         self._build_options_tab(notebook)
         self._build_results_tab(notebook)
         self._build_sweep_tab(notebook)
+        self._build_swarm_tab(notebook)
         self.main_pane.add(notebook, weight=3)
 
         run_panel = ttk.Frame(self.main_pane)
@@ -840,6 +865,342 @@ class App(tk.Tk):
         if self.sweep_outdir:
             open_path(self.sweep_outdir)
 
+    # ------------------------------------------------------------------
+    # Swarm tab — gsas2_swarm_optimize.py: surrogate-assisted search over
+    # Size/Mustrain starting points from a checkpoint .gpx. Built as a
+    # speed-testing front end first: every knob that controls how much
+    # work one run does (perturbations per generation, number of
+    # generations, surrogate particle/generation counts, backend, worker
+    # count) is exposed directly, plus an elapsed-time readout, so you can
+    # see how fast a given setting actually runs before committing to a
+    # long unattended one. Self-contained state (own subprocess, own
+    # progress table shape — one row per outer iteration, not per stage or
+    # candidate), same pattern as the Sweep tab above.
+    # ------------------------------------------------------------------
+
+    def _build_swarm_tab(self, notebook):
+        tab = ttk.Frame(notebook, padding=12)
+        notebook.add(tab, text="6. Swarm")
+        tab.columnconfigure(1, weight=1)
+        tab.rowconfigure(8, weight=1)
+
+        ttk.Label(tab, text="Searches many Size/Mustrain starting points from a checkpoint .gpx "
+                             "(from a real gsas2_auto_refine.py run) and reports the best, "
+                             "physically-sane result found — see gsas2_swarm_optimize.py.",
+                  foreground="#555", wraplength=760).grid(
+            row=0, column=0, columnspan=3, sticky="w", pady=(0, 8))
+
+        ttk.Label(tab, text="Checkpoint (.gpx):").grid(row=1, column=0, sticky="w", pady=4)
+        self.swarm_checkpoint_var = tk.StringVar()
+        ttk.Entry(tab, textvariable=self.swarm_checkpoint_var).grid(row=1, column=1, sticky="we", padx=6)
+        ttk.Button(tab, text="Browse...", command=self._browse_swarm_checkpoint).grid(row=1, column=2)
+
+        ttk.Label(tab, text="Output folder:").grid(row=2, column=0, sticky="w", pady=4)
+        self.swarm_outdir_var = tk.StringVar()
+        swarm_outdir_entry = ttk.Entry(tab, textvariable=self.swarm_outdir_var)
+        swarm_outdir_entry.grid(row=2, column=1, sticky="we", padx=6)
+        # Same "stop auto-generating the moment the user takes over" pattern
+        # as the main Options tab's outdir field — see _outdir_auto's
+        # docstring in __init__.
+        swarm_outdir_entry.bind("<Key>", lambda e: setattr(self, "_swarm_outdir_auto", False))
+        ttk.Button(tab, text="Browse...", command=self._browse_swarm_outdir).grid(row=2, column=2)
+        ttk.Label(tab, text="Left blank (the default): a fresh swarm_<timestamp> folder is "
+                             "created next to the checkpoint file for every run.",
+                  foreground="#555").grid(row=3, column=1, columnspan=2, sticky="w", pady=(2, 8))
+
+        knobs = ttk.Labelframe(tab, text="How much work one run does", padding=8)
+        knobs.grid(row=4, column=0, columnspan=3, sticky="we", pady=(0, 8))
+        for col in (1, 3):
+            knobs.columnconfigure(col, weight=0)
+
+        ttk.Label(knobs, text="Perturbations per generation:").grid(row=0, column=0, sticky="w", pady=3)
+        self.swarm_perturbations_var = tk.IntVar(value=50)
+        ttk.Spinbox(knobs, from_=1, to=2000, increment=1, textvariable=self.swarm_perturbations_var,
+                    width=8).grid(row=0, column=1, sticky="w", padx=(4, 20))
+
+        ttk.Label(knobs, text="Generations (outer iterations):").grid(row=0, column=2, sticky="w", pady=3)
+        self.swarm_generations_var = tk.IntVar(value=20)
+        ttk.Spinbox(knobs, from_=1, to=1000, increment=1, textvariable=self.swarm_generations_var,
+                    width=8).grid(row=0, column=3, sticky="w", padx=(4, 0))
+
+        ttk.Label(knobs, text="Surrogate particles:").grid(row=1, column=0, sticky="w", pady=3)
+        self.swarm_surrogate_particles_var = tk.IntVar(value=200)
+        ttk.Spinbox(knobs, from_=1, to=100000, increment=10, textvariable=self.swarm_surrogate_particles_var,
+                    width=8).grid(row=1, column=1, sticky="w", padx=(4, 20))
+
+        ttk.Label(knobs, text="Surrogate generations:").grid(row=1, column=2, sticky="w", pady=3)
+        self.swarm_surrogate_generations_var = tk.IntVar(value=150)
+        ttk.Spinbox(knobs, from_=1, to=100000, increment=10,
+                    textvariable=self.swarm_surrogate_generations_var,
+                    width=8).grid(row=1, column=3, sticky="w", padx=(4, 0))
+
+        ttk.Label(knobs, text="Backend:").grid(row=2, column=0, sticky="w", pady=3)
+        self.swarm_backend_var = tk.StringVar(value="auto")
+        ttk.Combobox(knobs, textvariable=self.swarm_backend_var, values=("auto", "cpu", "gpu"),
+                     state="readonly", width=6).grid(row=2, column=1, sticky="w", padx=(4, 20))
+
+        ttk.Label(knobs, text="Max parallel workers (blank = no limit):").grid(
+            row=2, column=2, sticky="w", pady=3)
+        self.swarm_max_workers_var = tk.StringVar(value="")
+        ttk.Entry(knobs, textvariable=self.swarm_max_workers_var, width=8).grid(
+            row=2, column=3, sticky="w", padx=(4, 0))
+
+        ttk.Label(knobs, text="Seed (blank = random each run):").grid(row=3, column=0, sticky="w", pady=3)
+        self.swarm_seed_var = tk.StringVar(value="")
+        ttk.Entry(knobs, textvariable=self.swarm_seed_var, width=8).grid(
+            row=3, column=1, sticky="w", padx=(4, 20))
+        ttk.Label(knobs, text="A fixed seed makes a run exactly reproducible (same result every time).",
+                  foreground="#555").grid(row=3, column=2, columnspan=2, sticky="w")
+
+        trim_box = ttk.Labelframe(tab, text="Fit-range trimming (optional)", padding=8)
+        trim_box.grid(row=5, column=0, columnspan=3, sticky="we", pady=(0, 8))
+        ttk.Label(trim_box, text="Also search how many degrees to discard from each end of the "
+                                  "fit range (e.g. beamstop shadow at low angle, vanishing peak "
+                                  "statistics at high angle). Rwp is NOT directly comparable "
+                                  "across different cutoffs — trimming can mechanically lower "
+                                  "it without the model actually improving. Keep bounds tight, "
+                                  "to whatever's independently justified for your data. Leave a "
+                                  "LO/HI pair blank to leave that side of the range untouched.",
+                  foreground="#555", wraplength=740).grid(
+            row=0, column=0, columnspan=4, sticky="w", pady=(0, 6))
+
+        ttk.Label(trim_box, text="Low-angle cutoff, LO/HI (deg):").grid(row=1, column=0, sticky="w", pady=3)
+        low_angle_frame = ttk.Frame(trim_box)
+        low_angle_frame.grid(row=1, column=1, sticky="w", padx=(4, 20))
+        self.swarm_low_angle_lo_var = tk.StringVar(value="")
+        self.swarm_low_angle_hi_var = tk.StringVar(value="")
+        ttk.Entry(low_angle_frame, textvariable=self.swarm_low_angle_lo_var, width=6).pack(side="left")
+        ttk.Label(low_angle_frame, text=" to ").pack(side="left")
+        ttk.Entry(low_angle_frame, textvariable=self.swarm_low_angle_hi_var, width=6).pack(side="left")
+
+        ttk.Label(trim_box, text="High-angle cutoff, LO/HI (deg):").grid(row=1, column=2, sticky="w", pady=3)
+        high_angle_frame = ttk.Frame(trim_box)
+        high_angle_frame.grid(row=1, column=3, sticky="w")
+        self.swarm_high_angle_lo_var = tk.StringVar(value="")
+        self.swarm_high_angle_hi_var = tk.StringVar(value="")
+        ttk.Entry(high_angle_frame, textvariable=self.swarm_high_angle_lo_var, width=6).pack(side="left")
+        ttk.Label(high_angle_frame, text=" to ").pack(side="left")
+        ttk.Entry(high_angle_frame, textvariable=self.swarm_high_angle_hi_var, width=6).pack(side="left")
+
+        run_row = ttk.Frame(tab)
+        run_row.grid(row=6, column=0, columnspan=3, sticky="we")
+        self.swarm_run_button = ttk.Button(run_row, text="Run swarm", command=self._on_run_swarm)
+        self.swarm_run_button.pack(side="left")
+        self.swarm_cancel_button = ttk.Button(run_row, text="Cancel", command=self._on_cancel_swarm,
+                                               state="disabled")
+        self.swarm_cancel_button.pack(side="left", padx=(6, 0))
+        self.swarm_open_outdir_button = ttk.Button(run_row, text="Open output folder",
+                                                     command=self._open_swarm_outdir, state="disabled")
+        self.swarm_open_outdir_button.pack(side="left", padx=(16, 0))
+        self.swarm_elapsed_var = tk.StringVar(value="")
+        ttk.Label(run_row, textvariable=self.swarm_elapsed_var).pack(side="right", padx=(0, 12))
+        self.swarm_status_var = tk.StringVar(value="Idle")
+        ttk.Label(run_row, textvariable=self.swarm_status_var, font=self.bold_font).pack(side="right")
+
+        progress_columns = ("iteration", "sane", "best_fitness")
+        self.swarm_progress_tree = ttk.Treeview(tab, columns=progress_columns, show="headings", height=6)
+        for col, label, width in [
+            ("iteration", "Generation", 90), ("sane", "Sane / total", 100),
+            ("best_fitness", "Best Rwp so far", 130),
+        ]:
+            self.swarm_progress_tree.heading(col, text=label)
+            self.swarm_progress_tree.column(col, width=width, anchor="w")
+        self.swarm_progress_tree.grid(row=7, column=0, columnspan=3, sticky="we", pady=(10, 6))
+
+        swarm_log_frame = ttk.Frame(tab)
+        swarm_log_frame.grid(row=8, column=0, columnspan=3, sticky="nsew")
+        swarm_log_frame.columnconfigure(0, weight=1)
+        swarm_log_frame.rowconfigure(0, weight=1)
+        self.swarm_log_text = tk.Text(swarm_log_frame, height=8, state="disabled", wrap="word",
+                                       font=tkfont.nametofont("TkFixedFont", self))
+        self.swarm_log_text.grid(row=0, column=0, sticky="nsew")
+        swarm_log_scroll = ttk.Scrollbar(swarm_log_frame, orient="vertical",
+                                          command=self.swarm_log_text.yview)
+        swarm_log_scroll.grid(row=0, column=1, sticky="ns")
+        self.swarm_log_text.configure(yscrollcommand=swarm_log_scroll.set)
+
+    def _browse_swarm_checkpoint(self):
+        path = filedialog.askopenfilename(title="Select checkpoint .gpx file",
+                                           filetypes=swarm_logic.GPX_FILETYPES)
+        if path:
+            self.swarm_checkpoint_var.set(path)
+            if self._swarm_outdir_auto:
+                self.swarm_outdir_var.set(swarm_logic.auto_swarm_outdir(path))
+
+    def _browse_swarm_outdir(self):
+        path = filedialog.askdirectory(title="Select output folder")
+        if path:
+            self.swarm_outdir_var.set(path)
+            self._swarm_outdir_auto = False
+
+    def _collect_swarm_config(self) -> swarm_logic.SwarmRunConfig:
+        def _parse_optional_int(text: str):
+            text = text.strip()
+            if not text:
+                return None
+            try:
+                return int(text)
+            except ValueError:
+                return -1  # deliberately invalid — validate_swarm_config() catches counts < 1
+
+        def _parse_optional_bounds(lo_text: str, hi_text: str):
+            lo_text, hi_text = lo_text.strip(), hi_text.strip()
+            if not lo_text and not hi_text:
+                return None
+            try:
+                return (float(lo_text), float(hi_text))
+            except ValueError:
+                return (-1.0, -1.0)  # deliberately invalid (also catches one field left blank)
+                                      # — validate_swarm_config() reports the real problem
+
+        return swarm_logic.SwarmRunConfig(
+            checkpoint=self.swarm_checkpoint_var.get().strip(),
+            gsasii_path=self.gsasii_var.get().strip(),
+            outdir=self.swarm_outdir_var.get().strip(),
+            outer_iterations=self.swarm_generations_var.get(),
+            perturbations=self.swarm_perturbations_var.get(),
+            surrogate_particles=self.swarm_surrogate_particles_var.get(),
+            surrogate_generations=self.swarm_surrogate_generations_var.get(),
+            backend=self.swarm_backend_var.get(),
+            seed=_parse_optional_int(self.swarm_seed_var.get()),
+            max_workers=_parse_optional_int(self.swarm_max_workers_var.get()),
+            low_angle_cutoff_bounds=_parse_optional_bounds(
+                self.swarm_low_angle_lo_var.get(), self.swarm_low_angle_hi_var.get()),
+            high_angle_cutoff_bounds=_parse_optional_bounds(
+                self.swarm_high_angle_lo_var.get(), self.swarm_high_angle_hi_var.get()),
+        )
+
+    def _on_run_swarm(self):
+        if self.swarm_proc is not None:
+            return  # already running — button is disabled, but be defensive
+
+        if self._swarm_outdir_auto:
+            self.swarm_outdir_var.set(swarm_logic.auto_swarm_outdir(self.swarm_checkpoint_var.get()))
+
+        cfg = self._collect_swarm_config()
+        problems = swarm_logic.validate_swarm_config(cfg)
+        if problems:
+            messagebox.showerror("Can't start swarm run yet", "\n".join(f"- {p}" for p in problems))
+            return
+
+        Path(cfg.outdir).mkdir(parents=True, exist_ok=True)
+        cmd = swarm_logic.build_swarm_command(cfg, script_path=str(SWARM_SCRIPT), python_exe=sys.executable)
+
+        self.swarm_progress_tree.delete(*self.swarm_progress_tree.get_children())
+        self.swarm_log_text.configure(state="normal")
+        self.swarm_log_text.delete("1.0", "end")
+        self.swarm_log_text.configure(state="disabled")
+
+        self.swarm_status_var.set("Running...")
+        self.swarm_run_button.configure(state="disabled")
+        self.swarm_cancel_button.configure(state="normal")
+        self.swarm_open_outdir_button.configure(state="disabled")
+        self.swarm_outdir = cfg.outdir
+        self.swarm_start_time = time.time()
+        self.swarm_elapsed_var.set("0.0s elapsed")
+
+        thread = threading.Thread(target=self._run_swarm_subprocess, args=(cmd,), daemon=True)
+        thread.start()
+        self.after(100, self._poll_swarm_queue)
+        self._tick_swarm_elapsed()
+
+    def _on_cancel_swarm(self):
+        if self.swarm_proc is not None:
+            self.swarm_proc.terminate()
+        self.swarm_status_var.set("Cancelling...")
+
+    def _run_swarm_subprocess(self, cmd: list):
+        try:
+            # stdin=DEVNULL — see the identical comment on _run_subprocess;
+            # the same hang risk applies to every subprocess this GUI
+            # launches, not just gsas2_auto_refine.py.
+            self.swarm_proc = subprocess.Popen(
+                cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+                stdin=subprocess.DEVNULL, text=True, bufsize=1,
+                **_no_window_kwargs(),
+            )
+        except OSError as exc:
+            self.swarm_event_queue.put({"event": "log", "text": f"Failed to start: {exc}"})
+            self.swarm_event_queue.put({"event": "swarm_done", "ok": False})
+            return
+
+        for line in self.swarm_proc.stdout:
+            self.swarm_event_queue.put(logic.parse_event_line(line))
+
+        self.swarm_proc.wait()
+        self.swarm_event_queue.put({"event": "process_exit", "returncode": self.swarm_proc.returncode})
+        self.swarm_proc = None
+
+    def _poll_swarm_queue(self):
+        try:
+            while True:
+                event = self.swarm_event_queue.get_nowait()
+                self._handle_swarm_event(event)
+        except queue.Empty:
+            pass
+
+        if self.swarm_proc is not None or not self.swarm_event_queue.empty():
+            self.after(100, self._poll_swarm_queue)
+
+    def _tick_swarm_elapsed(self):
+        """Updates the elapsed-time readout roughly every 200ms while a run
+        is active — the whole point of this tab is seeing how fast a given
+        set of knobs actually runs, so this needs to keep moving during the
+        run, not just report a final total once it's done."""
+        if self.swarm_start_time is None or self.swarm_proc is None:
+            return
+        elapsed = time.time() - self.swarm_start_time
+        self.swarm_elapsed_var.set(f"{_format_elapsed(elapsed)} elapsed")
+        self.after(200, self._tick_swarm_elapsed)
+
+    def _handle_swarm_event(self, event: dict):
+        kind = event.get("event")
+
+        if kind == "log":
+            self.swarm_log_text.configure(state="normal")
+            self.swarm_log_text.insert("end", event.get("text", "") + "\n")
+            self.swarm_log_text.see("end")
+            self.swarm_log_text.configure(state="disabled")
+
+        elif kind == "iteration_result":
+            iteration = event.get("iteration")
+            n_sane = event.get("n_sane")
+            best_fitness = event.get("best_fitness")
+            best_str = f"{best_fitness:.4f}" if isinstance(best_fitness, (int, float)) else ""
+            sane_str = f"{n_sane}/{self.swarm_perturbations_var.get()}" if n_sane is not None else ""
+            self.swarm_progress_tree.insert(
+                "", "end", values=(iteration, sane_str, best_str))
+
+        elif kind == "swarm_done":
+            ok = event.get("ok", False)
+            best_rwp = event.get("best_rwp")
+            if self.swarm_start_time is not None:
+                total = _format_elapsed(time.time() - self.swarm_start_time)
+                self.swarm_elapsed_var.set(f"{total} total")
+            if ok:
+                self.swarm_status_var.set(f"Done - best Rwp={best_rwp:.4f}"
+                                           if isinstance(best_rwp, (int, float)) else "Done")
+            else:
+                self.swarm_status_var.set("Finished - no sane result found")
+            self._finish_swarm()
+
+        elif kind == "process_exit":
+            if self.swarm_status_var.get() == "Running...":
+                rc = event.get("returncode")
+                self.swarm_status_var.set(f"Exited (code {rc})")
+                self._finish_swarm()
+
+    def _finish_swarm(self):
+        self.swarm_run_button.configure(state="normal")
+        self.swarm_cancel_button.configure(state="disabled")
+        self.swarm_start_time = None
+        if self.swarm_outdir and Path(self.swarm_outdir).is_dir():
+            self.swarm_open_outdir_button.configure(state="normal")
+
+    def _open_swarm_outdir(self):
+        if self.swarm_outdir:
+            open_path(self.swarm_outdir)
+
     def _build_run_panel(self, parent):
         panel = ttk.Frame(parent, padding=(10, 6))
         panel.pack(side="top", fill="both", expand=True)
@@ -1176,6 +1537,10 @@ def main():
     if not SWEEP_SCRIPT.is_file():
         print(f"ERROR: expected to find gsas2_candidate_sweep.py next to this GUI at "
               f"{SWEEP_SCRIPT}, but it's not there.", file=sys.stderr)
+        return 2
+    if not SWARM_SCRIPT.is_file():
+        print(f"ERROR: expected to find gsas2_swarm_optimize.py next to this GUI at "
+              f"{SWARM_SCRIPT}, but it's not there.", file=sys.stderr)
         return 2
     app = App()
     app.mainloop()

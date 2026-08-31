@@ -36,6 +36,13 @@ pattern/instprm/CIF still has to be real files a scientist put there. It
 only removes the manual, serial work of running and triaging many of them.
 """
 
+import os
+
+# Must be set before numpy/GSASIIscriptable ever load MKL — see
+# gsas2_auto_refine.py's matching comment for the full crash trace this
+# works around. Set here too so subprocesses spawned below inherit it.
+os.environ.setdefault("MKL_THREADING_LAYER", "SEQUENTIAL")
+
 import argparse
 import concurrent.futures
 import csv
@@ -43,7 +50,7 @@ import json
 import sys
 from pathlib import Path
 
-from gsas2_gui_logic import validate_run_config
+from gsas2_gui_logic import validate_run_config, resolve_gsasii_python
 from gsas2_candidate_sweep import run_one_candidate
 from gsas2_candidate_sweep_logic import build_command
 from gsas2_batch_run_logic import (
@@ -146,7 +153,8 @@ def main(argv=None) -> int:
         if cfg_problems:
             problems.append(f"experiment {exp.name!r}: " + "; ".join(cfg_problems))
             continue
-        cmd = build_command(cfg, script_path=str(REFINE_SCRIPT), python_exe=sys.executable)
+        python_exe = resolve_gsasii_python(cfg.gsasii_path, sys.executable)
+        cmd = build_command(cfg, script_path=str(REFINE_SCRIPT), python_exe=python_exe)
         jobs.append((exp.name, cmd, outdir))
 
     if problems:

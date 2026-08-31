@@ -49,6 +49,14 @@ Example:
         --outer-iterations 20 --perturbations 50 --backend auto
 """
 
+import os
+
+# Must be set before numpy/GSASIIscriptable ever load MKL — see
+# gsas2_auto_refine.py's matching comment for the full crash trace this
+# works around. Set here too so the worker subprocess spawned below
+# inherits it, and because this module imports numpy directly itself.
+os.environ.setdefault("MKL_THREADING_LAYER", "SEQUENTIAL")
+
 import argparse
 import concurrent.futures
 import json
@@ -60,6 +68,7 @@ from pathlib import Path
 import numpy as np
 
 import gsas2_swarm_logic as logic
+from gsas2_gui_logic import resolve_gsasii_python
 
 SCRIPT_DIR = Path(__file__).resolve().parent
 WORKER_SCRIPT = SCRIPT_DIR / "gsas2_swarm_worker.py"
@@ -233,7 +242,8 @@ def evaluate_point(checkpoint: Path, gsasii_path: Path, outdir: Path, values: di
     and returns its parsed JSON result. Never raises — a subprocess that
     fails to produce parseable output is reported as an error result,
     same convention as gsas2_candidate_sweep.py's run_one_candidate."""
-    cmd = [sys.executable, "-u", str(WORKER_SCRIPT),
+    python_exe = resolve_gsasii_python(str(gsasii_path), sys.executable)
+    cmd = [python_exe, "-u", str(WORKER_SCRIPT),
            "--checkpoint", str(checkpoint), "--gsasii-path", str(gsasii_path),
            "--outdir", str(outdir), "--values", json.dumps(values)]
     try:

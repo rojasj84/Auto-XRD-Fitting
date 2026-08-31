@@ -53,6 +53,13 @@ additionally writes <outdir>/sweep_summary.json (every candidate's
 outcome, ranked) and prints a ranking table to stdout.
 """
 
+import os
+
+# Must be set before numpy/GSASIIscriptable ever load MKL — see
+# gsas2_auto_refine.py's matching comment for the full crash trace this
+# works around. Set here too so subprocesses spawned below inherit it.
+os.environ.setdefault("MKL_THREADING_LAYER", "SEQUENTIAL")
+
 import argparse
 import concurrent.futures
 import json
@@ -60,7 +67,7 @@ import subprocess
 import sys
 from pathlib import Path
 
-from gsas2_gui_logic import validate_run_config, read_summary
+from gsas2_gui_logic import validate_run_config, read_summary, resolve_gsasii_python
 from gsas2_candidate_sweep_logic import (
     build_command,
     candidate_to_run_config,
@@ -167,7 +174,8 @@ def main(argv=None) -> int:
         if cfg_problems:
             problems.append(f"candidate {candidate.name!r}: " + "; ".join(cfg_problems))
             continue
-        cmd = build_command(cfg, script_path=str(REFINE_SCRIPT), python_exe=sys.executable)
+        python_exe = resolve_gsasii_python(cfg.gsasii_path, sys.executable)
+        cmd = build_command(cfg, script_path=str(REFINE_SCRIPT), python_exe=python_exe)
         jobs.append((candidate.name, cmd, outdir))
 
     if problems:

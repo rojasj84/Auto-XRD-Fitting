@@ -87,6 +87,45 @@ def validate_run_config(cfg: RunConfig) -> list:
     return problems
 
 
+def resolve_gsasii_python(gsasii_path: str, fallback: str) -> str:
+    """
+    Finds the Python interpreter bundled with a GSAS-II install, so
+    refinement subprocesses run under an interpreter that actually has
+    GSASIIscriptable's dependencies (PyCifRW, the matching numpy build,
+    etc.) rather than whichever Python happened to launch the GUI/CLI.
+
+    GSAS-II is not a pip package - its standard installer (gsas2main /
+    gsas2full) lays out one conda environment per install:
+        <env-root>/python.exe                        (Windows)
+        <env-root>/bin/python3                        (Linux/Mac)
+        <env-root>/GSAS-II/GSASII/GSASIIscriptable.py
+    i.e. the interpreter sits two directories above the directory that
+    contains GSASIIscriptable.py (what `gsasii_path` points at). Running
+    gsas2_auto_refine.py with a *different* Python (e.g. plain "python3"
+    on PATH, or a fresh Windows install of Python) can still successfully
+    `import GSASIIscriptable`, but crash or fail as soon as it touches
+    something env-specific - a missing PyCifRW ("Could not read file" on
+    every CIF) or a numpy/MKL build mismatch. Falls back to `fallback`
+    (normally sys.executable) if this layout isn't found - e.g. a bare
+    GSAS-II source checkout where the launching Python already has every
+    dependency installed itself.
+    """
+    if not gsasii_path:
+        return fallback
+    base = Path(gsasii_path)
+    candidates = [
+        base.parent.parent / "python.exe",
+        base.parent.parent / "bin" / "python3",
+        base.parent.parent / "bin" / "python",
+        base.parent / "python.exe",
+        base.parent / "bin" / "python3",
+    ]
+    for candidate in candidates:
+        if candidate.is_file():
+            return str(candidate)
+    return fallback
+
+
 def build_command(cfg: RunConfig, script_path: str, python_exe: str = "python3") -> list:
     """
     Builds the exact subprocess argv that runs gsas2_auto_refine.py for this

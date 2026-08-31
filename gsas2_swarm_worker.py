@@ -35,6 +35,14 @@ it would be there, not treated as a free win just because a human isn't
 watching this one.
 """
 
+import os
+
+# Must be set before numpy/GSASIIscriptable ever load MKL — see
+# gsas2_auto_refine.py's matching comment for the full crash trace this
+# works around. This module imports numpy directly and is also often run
+# as its own subprocess, so it needs the fix even if a parent set it too.
+os.environ.setdefault("MKL_THREADING_LAYER", "SEQUENTIAL")
+
 import argparse
 import contextlib
 import io

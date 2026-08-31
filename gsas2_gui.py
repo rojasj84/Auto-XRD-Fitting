@@ -27,6 +27,15 @@ Workflow, top to bottom:
 Run with:  python3 gsas2_gui.py
 """
 
+import os
+
+# Must be set before numpy/GSASIIscriptable ever load MKL — see
+# gsas2_auto_refine.py's matching comment for the full crash trace this
+# works around. Set here too since subprocesses spawned below inherit this
+# process's environment, and this module is also where a bundled numpy
+# import could happen first if the GUI ever computes anything itself.
+os.environ.setdefault("MKL_THREADING_LAYER", "SEQUENTIAL")
+
 import json
 import queue
 import subprocess
@@ -746,7 +755,8 @@ class App(tk.Tk):
         }
         manifest_path.write_text(json.dumps(manifest, indent=2), encoding="utf-8")
 
-        cmd = [sys.executable, "-u", str(SWEEP_SCRIPT),
+        python_exe = logic.resolve_gsasii_python(gsasii_path, sys.executable)
+        cmd = [python_exe, "-u", str(SWEEP_SCRIPT),
                "--manifest", str(manifest_path), "--outdir", str(outdir), "--emit-events"]
 
         self.sweep_result_tree.delete(*self.sweep_result_tree.get_children())
@@ -1113,7 +1123,8 @@ class App(tk.Tk):
             return
 
         Path(cfg.outdir).mkdir(parents=True, exist_ok=True)
-        cmd = swarm_logic.build_swarm_command(cfg, script_path=str(SWARM_SCRIPT), python_exe=sys.executable)
+        python_exe = logic.resolve_gsasii_python(cfg.gsasii_path, sys.executable)
+        cmd = swarm_logic.build_swarm_command(cfg, script_path=str(SWARM_SCRIPT), python_exe=python_exe)
 
         self.swarm_progress_tree.delete(*self.swarm_progress_tree.get_children())
         self.swarm_log_text.configure(state="normal")
@@ -1444,7 +1455,8 @@ class App(tk.Tk):
             return
 
         Path(cfg.outdir).mkdir(parents=True, exist_ok=True)
-        cmd = logic.build_command(cfg, script_path=str(REFINE_SCRIPT), python_exe=sys.executable)
+        python_exe = logic.resolve_gsasii_python(cfg.gsasii_path, sys.executable)
+        cmd = logic.build_command(cfg, script_path=str(REFINE_SCRIPT), python_exe=python_exe)
 
         self._reset_run_ui()
         self.status_var.set("Running...")

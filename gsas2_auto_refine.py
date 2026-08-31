@@ -76,6 +76,16 @@ re-detect/raise the symmetry; that's a modeling decision for the scientist,
 not something to guess at silently.
 """
 
+import os
+
+# Must be set before numpy/GSASIIscriptable ever load MKL: on some Windows
+# machines MKL's threaded (Intel OpenMP) codepath hard-crashes the process
+# (access violation, no catchable Python exception) the first time any
+# numpy.linalg/BLAS call actually runs — reproduced directly down to
+# np.linalg.inv() and np.dot() on a stock identity matrix, unrelated to
+# GSAS-II or any input data. Forcing MKL's sequential codepath avoids it.
+os.environ.setdefault("MKL_THREADING_LAYER", "SEQUENTIAL")
+
 import argparse
 import contextlib
 import csv

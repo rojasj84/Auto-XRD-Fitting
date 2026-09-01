@@ -23,7 +23,15 @@ Refinement protocol (fixed, in order — see run_refinement()):
     2. Sample displacement / zero-shift
     3. Unit cell parameters
     4. Profile parameters (instrument U/V/W, then microstrain/crystallite size)
-    5. Atom positions + isotropic thermal parameters   [optional, --refine-atoms]
+    5. Isotropic thermal parameters (atomic Uiso)
+    6. Atom positions                                  [optional, --refine-atoms]
+
+Stage 5 (thermal parameters) matches how a scientist actually runs this
+by hand: cell first, then peak profile/width, then Uiso to get calculated
+peak *intensities* matching before ever touching atom positions — Rwp
+alone is a secondary signal to that (see assess_fit_quality() below).
+Unlike atom positions, it's cheap, low-risk, and rarely a no-op, so it's
+a required stage rather than hidden behind --refine-atoms.
 
 Each stage is checkpointed (project saved to a stage-numbered .gpx) before
 it runs. After a stage, results are validated against hardcoded bounds
@@ -180,21 +188,22 @@ class Stage:
     pref_ori_phase_index: int = None
     # HAP refinement flags to explicitly turn OFF (via G2Phase.
     # clear_HAP_refinements()) before applying set_hap/set_hist/set_phase
-    # — see build_protocol()'s atoms-stage fallbacks. Every stage in this
-    # protocol is cumulative (a parameter freed in an earlier stage stays
-    # free in every later one, by design — see sample_displacement's
-    # docstring), which is normally what makes joint refinement converge
-    # properly by the end. It backfires specifically for atom positions:
-    # confirmed on real data (both Data/FeF3 and Data/MgO+MgBC) that
-    # atomic Uiso and Mustrain are correlated enough that refining atoms
-    # while Mustrain is still free (carried over from
-    # profile_microstrain_size) sends Mustrain to a runaway value
-    # (107,466 seen on real MgO+MgBC data) — even though the underlying
-    # fit was genuinely, substantially better (Rwp 12.4% -> 9.8% on that
-    # same run) before the bounds check discarded it. Freezing Mustrain
-    # at its already-converged value first removes that correlated
-    # degree of freedom without giving up what profile_microstrain_size
-    # already found.
+    # — see build_protocol()'s thermal_parameters- and atoms-stage
+    # fallbacks. Every stage in this protocol is cumulative (a parameter
+    # freed in an earlier stage stays free in every later one, by design
+    # — see sample_displacement's docstring), which is normally what
+    # makes joint refinement converge properly by the end. It backfires
+    # for atomic parameters — both thermal (Uiso) and position: confirmed
+    # on real data (Data/FeF3 and Data/MgO+MgBC) that either one is
+    # correlated enough with Mustrain that refining it while Mustrain is
+    # still free (carried over from profile_microstrain_size) sends
+    # Mustrain to a runaway value — 107,466 for Uiso on real MgO+MgBC
+    # data, 19,239 for positions on real FeF3 data — even though the
+    # underlying fit was genuinely better each time (Rwp 12.4% -> 9.8%
+    # and 5.351% -> 5.104% respectively) before the bounds check
+    # discarded it. Freezing Mustrain at its already-converged value
+    # first removes that correlated degree of freedom without giving up
+    # what profile_microstrain_size already found.
     clear_hap: dict = field(default_factory=dict)
 
 
@@ -398,6 +407,50 @@ def build_protocol(refine_atoms: bool, lebail: bool = False, n_phases: int = 1) 
                 ),
             ],
         ),
+        # Isotropic atomic displacement parameters (Uiso) — confirmed with
+        # the scientist as a standard, expected part of her manual
+        # workflow: cell, then peak profile/width, then Uiso to get
+        # calculated peak *intensities* right, before ever touching atom
+        # positions or worrying about the final Rwp number. Required (not
+        # optional=True) for that reason — this isn't a "try it and see
+        # if it helps" lever the way SH/L or extinction are, it's an
+        # expected step every real refinement goes through. Skipped
+        # entirely under --lebail: LeBail extracts each reflection's
+        # intensity directly from the data instead of computing it from
+        # the phase's atoms, so Uiso has no effect on the calculated
+        # pattern there — the same reason --lebail and --refine-atoms are
+        # mutually exclusive (see parse_args's --lebail help).
+        *([Stage(
+            name="thermal_parameters",
+            # G2Phase.set_refinements()'s "Atoms" handler does
+            # `value.items()` — it wants a dict of {atom_label:
+            # refinement_flags}, not a bare string. "all" -> every atom;
+            # "U" -> confirmed against the installed source
+            # (G2AtomRecord.refinement_flags's setter) as isotropic
+            # displacement parameter only, not position; only 'F'
+            # (occupancy), 'X', and 'U' are valid flag characters.
+            set_phase={"Atoms": {"all": "U"}},
+            # Confirmed on real data (both Data/FeF3 and Data/MgO+MgBC):
+            # atomic Uiso is correlated enough with Mustrain (still free
+            # here — every stage in this protocol is cumulative) that
+            # refining it alongside Mustrain sends Mustrain to a runaway
+            # value even when the underlying fit is genuinely much better
+            # (Rwp 12.4% -> 9.8% on real MgO+MgBC data, discarded by the
+            # bounds check before this fallback existed). See Stage.
+            # clear_hap's docstring for the full evidence.
+            fallbacks=[
+                Stage(
+                    name="thermal_mustrain_frozen",
+                    set_phase={"Atoms": {"all": "U"}},
+                    clear_hap={"Mustrain": True},
+                ),
+                Stage(
+                    name="thermal_mustrain_and_size_frozen",
+                    set_phase={"Atoms": {"all": "U"}},
+                    clear_hap={"Mustrain": True, "Size": True},
+                ),
+            ],
+        )] if not lebail else []),
         Stage(
             name="extinction",
             optional=True,
@@ -451,40 +504,34 @@ def build_protocol(refine_atoms: bool, lebail: bool = False, n_phases: int = 1) 
         stages.append(
             Stage(
                 name="atoms",
-                # G2Phase.set_refinements()'s "Atoms" handler does
-                # `value.items()` — it wants a dict of {atom_label:
-                # refinement_flags}, not a bare string. "all" -> every
-                # atom; "XU" -> confirmed against the installed source
-                # (G2AtomRecord.refinement_flags's setter) as position
-                # (X) + isotropic displacement parameter (U); only 'F'
-                # (occupancy), 'X', and 'U' are valid flag characters.
-                # Passing the bare string "all" here raised
-                # AttributeError("'str' object has no attribute 'items'")
-                # on every real --refine-atoms run — caught by
-                # RefinementRunner's broad exception handling and
-                # reported as a normal failed_error (optional, so it
-                # didn't fail the run), but it meant --refine-atoms could
-                # never actually refine anything.
-                set_phase={"Atoms": {"all": "XU"}},
+                # Position only ("X") — thermal displacement (Uiso, "U")
+                # is handled separately by the required thermal_parameters
+                # stage above, regardless of --refine-atoms. See that
+                # stage's comment for the "all"/dict-not-bare-string and
+                # valid-flag-character notes, which apply here too.
+                set_phase={"Atoms": {"all": "X"}},
                 optional=True,
-                # Confirmed on real data (both Data/FeF3 and
-                # Data/MgO+MgBC): atomic Uiso is correlated enough with
-                # Mustrain (still free here — every stage in this
-                # protocol is cumulative) that refining atoms alongside
-                # it sends Mustrain to a runaway value even when the
-                # underlying fit is genuinely much better (Rwp 12.4% ->
-                # 9.8% on real MgO+MgBC data, discarded by the bounds
-                # check before this fallback existed). See Stage.
-                # clear_hap's docstring for the full evidence.
+                # Confirmed on real FeF3 data: atom POSITIONS alone (not
+                # just Uiso — see thermal_parameters' fallbacks) are also
+                # correlated enough with Mustrain (still free here — every
+                # stage in this protocol is cumulative) to send it to a
+                # runaway value (19,239 seen on real data, tripping
+                # Bounds.max_profile_param_abs) even though the underlying
+                # fit was genuinely better (Rwp 5.351% -> 5.104%). This
+                # was found *because* removing "U" from this stage (once
+                # thermal_parameters took it over) also removed the
+                # Mustrain-freezing fallback ladder the combined "XU"
+                # stage used to have — restoring it here, same mechanism
+                # as thermal_parameters' fallbacks.
                 fallbacks=[
                     Stage(
                         name="atoms_mustrain_frozen",
-                        set_phase={"Atoms": {"all": "XU"}},
+                        set_phase={"Atoms": {"all": "X"}},
                         clear_hap={"Mustrain": True},
                     ),
                     Stage(
                         name="atoms_mustrain_and_size_frozen",
-                        set_phase={"Atoms": {"all": "XU"}},
+                        set_phase={"Atoms": {"all": "X"}},
                         clear_hap={"Mustrain": True, "Size": True},
                     ),
                 ],
@@ -506,6 +553,43 @@ class Bounds:
                                          # is still suspect; flagged, not fatal
     max_profile_param_abs: float = 10000.0
     min_optional_improvement_frac: float = 0.01
+    # How far a cell ANGLE (alpha/beta/gamma) may drift from its starting
+    # value, in absolute degrees rather than cell_drift_ok's relative
+    # fraction — an angle can legitimately start at (or near) 0, where a
+    # relative-drift bound is undefined/meaningless the same way it is for
+    # U/V/W above. Only exercised for a phase whose crystal system leaves
+    # an angle free to refine at all (monoclinic/triclinic — see
+    # gsas2_swarm_logic.cell_free_params); every higher-symmetry system's
+    # angles are fixed by GSAS-II's own cell constraints regardless of
+    # what this bound allows.
+    max_angle_drift_deg: float = 5.0
+    # Lower physical floor for an isotropic atomic displacement parameter
+    # (Uiso, in A^2 — confirmed against the installed GSASIIscriptable.py
+    # source: Atom.uiso is a plain unconstrained float with no built-in
+    # lower bound of its own). A well-behaved atom's Uiso is essentially
+    # always well above this at room temperature; a value at or below it
+    # is the standard real Rietveld failure mode for a weakly-scattering
+    # light atom (O, F) refining with too few free structural parameters
+    # to constrain it independently — negative/near-zero Uiso, not a
+    # small-but-real one. Nothing else in this module's bounds checks
+    # would catch that: Rwp/cell/profile-parameter checks are all
+    # insensitive to one atom's thermal parameter going unphysical.
+    min_uiso: float = 0.001
+    # Lower floor for a phase's HAP Scale factor (relative phase
+    # fraction) — 0.0 (the physical floor: a non-positive phase fraction
+    # is meaningless) by default, kept as its own Bounds field rather
+    # than a hardcoded literal for the same reason every other threshold
+    # here is.
+    min_scale: float = 0.0
+    # Rwp threshold above which the optional atom-POSITION stage is
+    # skipped outright rather than attempted — refining atom positions
+    # against a background/cell/profile that hasn't converged reasonably
+    # well yet is more likely to diverge than to help, and wastes a real
+    # GSAS-II evaluation finding that out the hard way. Does not affect
+    # the required thermal_parameters stage (isotropic Uiso only, not
+    # positions) — that one is cheap and low-risk enough to always
+    # attempt regardless of how far along the fit already is.
+    max_rwp_for_atom_refinement: float = 15.0
     # An *optional* stage (see Stage.optional) needs a stricter bar than
     # "didn't get worse": adding a free parameter that has no real effect
     # on this sample essentially never makes Rwp worse either (it just
@@ -571,6 +655,20 @@ def cell_drift_ok(start_cell, new_cell, bounds: Bounds) -> bool:
     return True
 
 
+def angle_drift_ok(start_cell, new_cell, bounds: Bounds) -> bool:
+    """start_cell/new_cell: (a, b, c, alpha, beta, gamma). The angle
+    counterpart to cell_drift_ok() — see Bounds.max_angle_drift_deg's
+    docstring for why this is an absolute-degrees bound, not a relative
+    one. Only meaningful for a phase whose crystal system leaves an angle
+    free (see gsas2_swarm_logic.cell_free_params); for every other phase
+    start_cell[3:] == new_cell[3:] already (GSAS-II's own cell constraints
+    hold every fixed angle exactly at 90/120), so this trivially passes."""
+    for s, n in zip(start_cell[3:], new_cell[3:]):
+        if abs(n - s) > bounds.max_angle_drift_deg:
+            return False
+    return True
+
+
 def profile_params_sane(values, bounds: Bounds) -> bool:
     """
     values: a flat iterable of numbers to sanity-check (Instrument
@@ -590,6 +688,50 @@ def profile_params_sane(values, bounds: Bounds) -> bool:
         if v != v:  # NaN check without numpy
             continue
         if abs(v) > bounds.max_profile_param_abs:
+            return False
+    return True
+
+
+def uiso_sane(values, bounds: Bounds) -> bool:
+    """
+    values: a flat iterable of isotropic atomic displacement parameters
+    (Uiso, A^2 — see RefinementRunner._uiso_values()). Must stay above
+    Bounds.min_uiso — see that field's docstring for why nothing else
+    catches a light atom's Uiso refining to zero, negative, or an
+    implausibly-small value. None/NaN entries are skipped, same
+    convention as profile_params_sane.
+    """
+    for v in values:
+        if v is None:
+            continue
+        try:
+            v = float(v)
+        except (TypeError, ValueError):
+            continue
+        if v != v:  # NaN check without numpy
+            continue
+        if v < bounds.min_uiso:
+            return False
+    return True
+
+
+def scale_sane(values, bounds: Bounds) -> bool:
+    """
+    values: a flat iterable of phase HAP Scale factors (relative phase
+    fraction — see RefinementRunner._scale_values()). Must stay strictly
+    positive — a phase fraction of zero or less has no physical meaning.
+    None/NaN entries are skipped, same convention as profile_params_sane.
+    """
+    for v in values:
+        if v is None:
+            continue
+        try:
+            v = float(v)
+        except (TypeError, ValueError):
+            continue
+        if v != v:  # NaN check without numpy
+            continue
+        if v <= bounds.min_scale:
             return False
     return True
 
@@ -807,11 +949,77 @@ class RefinementRunner:
                     pass
         return values
 
+    def _uiso_values(self) -> list:
+        """
+        Flat list of every isotropic atom's Uiso (A^2) across every
+        phase currently in the project — fed to uiso_sane() after every
+        stage (see run_stage), same defensive-but-real pattern as
+        _profile_values(). Only isotropic atoms (G2AtomRecord.adp_flag
+        == 'I') are included — confirmed against the installed source
+        (Atom.uiso raises for an anisotropic atom, Atom.ADP is the
+        general accessor) — this pipeline never sets anisotropic ADPs,
+        so there's nothing meaningful to check there. Best-effort: the
+        FakeProject test harness doesn't model phase.atoms() at all, so
+        this contributes nothing rather than raising.
+        """
+        values = []
+        try:
+            for phase in self.gpx.phases():
+                for atom in phase.atoms():
+                    try:
+                        if atom.adp_flag == "I":
+                            values.append(atom.uiso)
+                    except (AttributeError, TypeError):
+                        pass
+        except (AttributeError, TypeError):
+            pass
+        return values
+
+    def _scale_values(self) -> list:
+        """
+        Flat list of every phase's HAP Scale factor (relative phase
+        fraction) for the histogram — fed to scale_sane() after every
+        stage. Confirmed against the installed source: HAP 'Scale' is a
+        plain [value, refine-flag] pair, the same shape as 'Extinction'.
+        """
+        values = []
+        try:
+            hist_name = self.gpx.histogram(0).name
+        except (AttributeError, IndexError):
+            hist_name = None
+        if hist_name is not None:
+            for phase in self.gpx.phases():
+                try:
+                    values.append(phase.data["Histograms"][hist_name]["Scale"][0])
+                except (AttributeError, KeyError, IndexError, TypeError):
+                    pass
+        return values
+
     def run_stage(self, stage: Stage, stage_idx: int, start_cells: dict) -> StageResult:
         checkpoint = self.outdir / f"checkpoint_{stage_idx:02d}_pre_{stage.name}.gpx"
         self.gpx.save(str(checkpoint))
         rwp_before = self._rwp()
         self.on_event({"event": "stage_start", "index": stage_idx, "name": stage.name})
+
+        # Atom-POSITION refinement (--refine-atoms) is skipped outright,
+        # without even attempting it, once Rwp is worse than Bounds.
+        # max_rwp_for_atom_refinement — see that field's docstring. rwp_
+        # before == rwp_before excludes NaN (never actually happens for
+        # this stage, since it's always last, but matches this module's
+        # existing NaN-safety convention elsewhere). Keyed on stage name
+        # rather than a generic Stage field since this is the one stage
+        # this particular gate applies to; the required thermal_
+        # parameters stage is exempt (cheap, low-risk, always attempted).
+        if (stage.name == "atoms" and rwp_before == rwp_before
+                and rwp_before > self.bounds.max_rwp_for_atom_refinement):
+            self.log(f"  [{stage.name}] skipped: Rwp {rwp_before:.3f} exceeds "
+                      f"{self.bounds.max_rwp_for_atom_refinement:.1f}% - refine "
+                      f"atom positions only once the basic fit already converges "
+                      f"reasonably well")
+            result = StageResult(stage.name, "skipped", rwp_before, rwp_before, "",
+                                  optional=stage.optional)
+            self._emit_result(stage_idx, result)
+            return result
 
         # Try the stage's primary configuration first, then — only if that
         # fails its bounds/error check — each fallback in order, reloading
@@ -942,7 +1150,14 @@ class RefinementRunner:
         if ok:
             for i in range(len(self.gpx.phases())):
                 if i in start_cells:
-                    ok = ok and cell_drift_ok(start_cells[i], self._cell(i), self.bounds)
+                    new_cell = self._cell(i)
+                    ok = ok and cell_drift_ok(start_cells[i], new_cell, self.bounds)
+                    # angle_drift_ok's counterpart to cell_drift_ok's length
+                    # check — only ever a real constraint for a monoclinic/
+                    # triclinic phase's free angle(s); every other crystal
+                    # system's angles are fixed by GSAS-II's own cell
+                    # constraints, so this trivially passes there.
+                    ok = ok and angle_drift_ok(start_cells[i], new_cell, self.bounds)
         if ok:
             # Catches the failure mode cell-drift alone misses: U/V/W and
             # Mustrain wandering to unphysical magnitudes (or, as seen on
@@ -953,6 +1168,12 @@ class RefinementRunner:
             # _profile_values() for the real-data evidence that motivated
             # this.
             ok = ok and profile_params_sane(self._profile_values(), self.bounds)
+        if ok:
+            # Neither check above catches one atom's thermal parameter or
+            # one phase's Scale factor going unphysical — see Bounds.
+            # min_uiso/min_scale's docstrings for why nothing else would.
+            ok = ok and uiso_sane(self._uiso_values(), self.bounds)
+            ok = ok and scale_sane(self._scale_values(), self.bounds)
         return _AttemptOutcome(ok=ok, rwp_after=rwp_after, error=None)
 
     def _emit_result(self, stage_idx: int, result: "StageResult"):
@@ -1037,6 +1258,41 @@ def get_phase_cells(gpx) -> dict:
         except Exception:  # noqa: BLE001 — esd is a nice-to-have, never fatal
             esds[phase.name] = {}
     return cells, esds
+
+
+def get_gof_stats(gpx) -> dict:
+    """
+    Returns the refinement-wide goodness-of-fit statistics GSAS-II's own
+    solver computes but doesn't expose through G2PwdrData.residuals()
+    (that only carries R/Rb/wR/wRb/wRmin plus per-phase Bragg R-values —
+    confirmed against the installed source). GOF (= sqrt(chi^2 /
+    degrees of freedom)), chi^2, and the observation/variable counts
+    live instead at gpx.data['Covariance']['data']['Rvals'], populated
+    by GSASIIstrMain.Refine() — confirmed directly against a real
+    refined project this session.
+
+    NOT used as a pass/fail gate anywhere in this module (unlike Bounds.
+    max_rwp_absolute) — confirmed on this project's own real, already-
+    validated FeF3 result that a genuinely good fit can have GOF well
+    above the textbook "close to 1.0" target: GOF=6.93 on a run whose
+    Rwp (5.35%) and calc/obs correlation both looked fine. Gating on
+    that number would flag good fits as failures; reported here for a
+    scientist to read, same spirit as fit_quality's correlation figure.
+
+    Best-effort: {} if a refinement never actually ran (e.g. every
+    stage failed and reverted before any covariance was ever computed).
+    """
+    try:
+        rvals = gpx.data["Covariance"]["data"]["Rvals"]
+    except (AttributeError, KeyError, TypeError):
+        return {}
+    stats = {}
+    for key, cast in (("GOF", float), ("chisq", float), ("Nobs", int), ("Nvars", int)):
+        try:
+            stats[key.lower()] = cast(rvals[key])
+        except (KeyError, TypeError, ValueError):
+            stats[key.lower()] = None
+    return stats
 
 
 def assess_fit_quality(hist) -> dict:
@@ -1125,9 +1381,10 @@ def parse_args(argv=None):
                     help="Path to the local GSAS-II install (dir containing "
                          "GSASIIscriptable.py). Required unless --dry-run.")
     p.add_argument("--refine-atoms", action="store_true",
-                    help="Add the optional atom-position/thermal-parameter stage. "
-                         "Off by default — atom refinement without restraints can be "
-                         "unstable and is a modeling decision, not a default.")
+                    help="Add the optional atom-position stage (after the required "
+                         "isotropic thermal-parameter stage, which always runs). "
+                         "Off by default — atom-position refinement without restraints "
+                         "can be unstable and is a modeling decision, not a default.")
     p.add_argument("--lebail", action="store_true",
                     help="Extract each reflection's intensity directly from the data "
                          "(LeBail) instead of computing it from the phase's atom "
@@ -1378,6 +1635,7 @@ def main(argv=None):
         # makes "last stage failed and reverted, run still succeeded"
         # a routine, not rare, case.
         "final_rwp": runner._rwp(),
+        "gof_stats": get_gof_stats(runner.gpx),
         "fit_quality": fit_quality,
         "cells": cells,
         "cell_esds": cell_esds,

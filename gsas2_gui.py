@@ -69,6 +69,7 @@ STAGE_LABELS = {
     "unit_cell": "Unit cell",
     "profile_instrument": "Profile (instrument)",
     "profile_microstrain_size": "Profile (microstrain/size)",
+    "thermal_parameters": "Thermal parameters (Uiso)",
     "atoms": "Atom positions",
 }
 
@@ -354,7 +355,8 @@ class App(tk.Tk):
                   foreground="#555").grid(row=3, column=1, columnspan=2, sticky="w", pady=(2, 8))
 
         self.refine_atoms_var = tk.BooleanVar(value=False)
-        ttk.Checkbutton(tab, text="Refine atom positions / thermal parameters (optional, last stage)",
+        ttk.Checkbutton(tab, text="Refine atom positions (optional, last stage — thermal "
+                                    "parameters always refine)",
                          variable=self.refine_atoms_var).grid(
             row=4, column=0, columnspan=3, sticky="w", pady=4)
 
@@ -968,23 +970,50 @@ class App(tk.Tk):
         ttk.Label(knobs, text="A fixed seed makes a run exactly reproducible (same result every time).",
                   foreground="#555").grid(row=3, column=2, columnspan=2, sticky="w")
 
-        ttk.Label(knobs, text="Mustrain type:").grid(row=4, column=0, sticky="w", pady=3)
+        ttk.Label(knobs, text="Target:").grid(row=4, column=0, sticky="w", pady=3)
+        self.swarm_target_var = tk.StringVar(value="microstrain_size")
+        ttk.Combobox(knobs, textvariable=self.swarm_target_var,
+                     values=("microstrain_size", "cell"), state="readonly", width=15).grid(
+            row=4, column=1, sticky="w", padx=(4, 20))
+        ttk.Label(knobs, text="microstrain_size (default): pick a checkpoint_0N_pre_profile_"
+                              "microstrain_size.gpx. cell: pick a checkpoint_03_pre_unit_cell.gpx "
+                              "instead and search each phase's independent cell parameters.",
+                  foreground="#555", wraplength=420).grid(row=4, column=2, columnspan=2, sticky="w")
+
+        ttk.Label(knobs, text="Mustrain type:").grid(row=5, column=0, sticky="w", pady=3)
         self.swarm_mustrain_type_var = tk.StringVar(value="isotropic")
         ttk.Combobox(knobs, textvariable=self.swarm_mustrain_type_var,
                      values=("isotropic", "uniaxial"), state="readonly", width=9).grid(
-            row=4, column=1, sticky="w", padx=(4, 20))
+            row=5, column=1, sticky="w", padx=(4, 20))
         ttk.Label(knobs, text="isotropic (recommended): uniaxial Mustrain + isotropic Size are "
-                              "~98% correlated on real data, causing most 'insane' results.",
-                  foreground="#555", wraplength=420).grid(row=4, column=2, columnspan=2, sticky="w")
+                              "~98% correlated on real data, causing most 'insane' results. "
+                              "(Target: microstrain_size only.)",
+                  foreground="#555", wraplength=420).grid(row=5, column=2, columnspan=2, sticky="w")
+
+        ttk.Label(knobs, text="Cell length drift (fraction):").grid(row=6, column=0, sticky="w", pady=3)
+        self.swarm_cell_length_drift_var = tk.DoubleVar(value=0.15)
+        ttk.Spinbox(knobs, from_=0.01, to=0.99, increment=0.01,
+                    textvariable=self.swarm_cell_length_drift_var, width=8).grid(
+            row=6, column=1, sticky="w", padx=(4, 20))
+        ttk.Label(knobs, text="Cell angle bounds (deg):").grid(row=6, column=2, sticky="w", pady=3)
+        self.swarm_cell_angle_bounds_var = tk.DoubleVar(value=2.0)
+        ttk.Spinbox(knobs, from_=0.1, to=45.0, increment=0.5,
+                    textvariable=self.swarm_cell_angle_bounds_var, width=8).grid(
+            row=6, column=3, sticky="w", padx=(4, 0))
+        ttk.Label(knobs, text="Search each free cell length within +/- this fraction of the "
+                              "checkpoint's own value, and each free angle (monoclinic/"
+                              "triclinic only) within +/- this many degrees. (Target: cell only.)",
+                  foreground="#555", wraplength=740).grid(
+            row=7, column=0, columnspan=4, sticky="w", pady=(0, 3))
 
         self.swarm_keep_evaluations_var = tk.BooleanVar(value=False)
         ttk.Checkbutton(knobs, text="Keep every candidate's evaluation files",
                         variable=self.swarm_keep_evaluations_var).grid(
-            row=5, column=0, columnspan=2, sticky="w", pady=3)
+            row=8, column=0, columnspan=2, sticky="w", pady=3)
         ttk.Label(knobs, text="Off (recommended): only the winner is kept, as best.gpx — a real "
                               "run can otherwise leave hundreds of MB to multiple GB of "
                               "discarded candidates on disk.",
-                  foreground="#555", wraplength=420).grid(row=5, column=2, columnspan=2, sticky="w")
+                  foreground="#555", wraplength=420).grid(row=8, column=2, columnspan=2, sticky="w")
 
         trim_box = ttk.Labelframe(tab, text="Fit-range trimming (optional)", padding=8)
         trim_box.grid(row=6, column=0, columnspan=3, sticky="we", pady=(0, 8))
@@ -1100,6 +1129,9 @@ class App(tk.Tk):
             surrogate_generations=self.swarm_surrogate_generations_var.get(),
             backend=self.swarm_backend_var.get(),
             mustrain_type=self.swarm_mustrain_type_var.get(),
+            target=self.swarm_target_var.get(),
+            cell_length_drift=self.swarm_cell_length_drift_var.get(),
+            cell_angle_bounds=self.swarm_cell_angle_bounds_var.get(),
             keep_evaluations=self.swarm_keep_evaluations_var.get(),
             seed=_parse_optional_int(self.swarm_seed_var.get()),
             max_workers=_parse_optional_int(self.swarm_max_workers_var.get()),

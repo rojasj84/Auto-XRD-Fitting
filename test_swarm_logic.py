@@ -173,6 +173,161 @@ def test_build_param_specs_both_angle_cutoffs_together():
           and bool(np.all((points[:, 3] >= 0.0) & (points[:, 3] <= 10.0))))
 
 
+def test_cell_free_params():
+    """
+    Every (SGLaue, SGUniq) pairing here was confirmed directly against a
+    real GSAS-II install this session (GSASIIspc.SpcGroup() on one
+    representative space group per row: Fm-3m, P4/mmm, P21/c, C2/m, Pnma,
+    P-1, R-3c in both hexagonal and rhombohedral axes settings) and cross-
+    checked against the installed GSASIIstrIO.cellVary() source, which
+    every real GSAS-II refine call uses to build the same cell-parameter
+    equivalences.
+    """
+    check("cubic (m3m): only a is free",
+          logic.cell_free_params({"SGLaue": "m3m", "SGUniq": ""}) == ["length_a"])
+    check("cubic (m3): only a is free",
+          logic.cell_free_params({"SGLaue": "m3", "SGUniq": ""}) == ["length_a"])
+    check("tetragonal (4/mmm): a and c are free, b is not",
+          logic.cell_free_params({"SGLaue": "4/mmm", "SGUniq": ""})
+          == ["length_a", "length_c"])
+    check("hexagonal-setting trigonal (3m1, e.g. R-3c hexagonal axes): a and c free",
+          logic.cell_free_params({"SGLaue": "3m1", "SGUniq": ""})
+          == ["length_a", "length_c"])
+    check("rhombohedral-setting trigonal (3mR, e.g. R-3c rhombohedral axes): a and alpha free",
+          logic.cell_free_params({"SGLaue": "3mR", "SGUniq": ""})
+          == ["length_a", "angle_alpha"])
+    check("orthorhombic (mmm): a, b, c free, no angles",
+          logic.cell_free_params({"SGLaue": "mmm", "SGUniq": ""})
+          == ["length_a", "length_b", "length_c"])
+    check("monoclinic unique b (2/m, SGUniq='b', the common default): a, b, c, beta free",
+          logic.cell_free_params({"SGLaue": "2/m", "SGUniq": "b"})
+          == ["length_a", "length_b", "length_c", "angle_beta"])
+    check("monoclinic unique a: the free angle is alpha, not beta",
+          logic.cell_free_params({"SGLaue": "2/m", "SGUniq": "a"})
+          == ["length_a", "length_b", "length_c", "angle_alpha"])
+    check("monoclinic unique c: the free angle is gamma, not beta",
+          logic.cell_free_params({"SGLaue": "2/m", "SGUniq": "c"})
+          == ["length_a", "length_b", "length_c", "angle_gamma"])
+    check("triclinic (-1): every parameter is free",
+          logic.cell_free_params({"SGLaue": "-1", "SGUniq": ""})
+          == ["length_a", "length_b", "length_c", "angle_alpha", "angle_beta", "angle_gamma"])
+
+    try:
+        logic.cell_free_params({"SGLaue": "not-a-real-laue-class", "SGUniq": ""})
+        check("an unrecognized SGLaue raises ValueError rather than guessing", False)
+    except ValueError:
+        check("an unrecognized SGLaue raises ValueError rather than guessing", True)
+
+
+def test_reconstruct_cell():
+    """reconstruct_cell() must derive every symmetry-dependent value
+    (b=a, fixed angles, etc.) instead of leaving it at start_cell's own
+    value — the whole point of respecting the phase's crystal system
+    rather than treating every one of a/b/c/alpha/beta/gamma as
+    independently searchable."""
+    start = (5.0, 5.1, 5.2, 89.0, 91.0, 92.0)  # deliberately "wrong" on every
+    # dependent slot, so a test that accidentally reads from start_cell
+    # instead of deriving the real value would be caught immediately.
+
+    check("cubic: b and c forced equal to a; angles forced to 90",
+          logic.reconstruct_cell({"length_a": 4.2}, {"SGLaue": "m3m", "SGUniq": ""}, start)
+          == (4.2, 4.2, 4.2, 90.0, 90.0, 90.0))
+
+    check("tetragonal: b forced equal to a; c independent; angles forced to 90",
+          logic.reconstruct_cell({"length_a": 4.2, "length_c": 7.5},
+                                  {"SGLaue": "4/mmm", "SGUniq": ""}, start)
+          == (4.2, 4.2, 7.5, 90.0, 90.0, 90.0))
+
+    check("hexagonal-setting trigonal: b=a, gamma forced to 120, alpha/beta to 90",
+          logic.reconstruct_cell({"length_a": 5.2, "length_c": 13.3},
+                                  {"SGLaue": "3m1", "SGUniq": ""}, start)
+          == (5.2, 5.2, 13.3, 90.0, 90.0, 120.0))
+
+    check("rhombohedral-setting trigonal: b=c=a, beta=gamma=alpha",
+          logic.reconstruct_cell({"length_a": 5.4, "angle_alpha": 58.9},
+                                  {"SGLaue": "3mR", "SGUniq": ""}, start)
+          == (5.4, 5.4, 5.4, 58.9, 58.9, 58.9))
+
+    check("orthorhombic: a, b, c independent; angles forced to 90",
+          logic.reconstruct_cell({"length_a": 3.0, "length_b": 4.0, "length_c": 5.0},
+                                  {"SGLaue": "mmm", "SGUniq": ""}, start)
+          == (3.0, 4.0, 5.0, 90.0, 90.0, 90.0))
+
+    check("monoclinic unique b: a, b, c, beta independent; alpha/gamma forced to 90",
+          logic.reconstruct_cell(
+              {"length_a": 6.0, "length_b": 7.0, "length_c": 8.0, "angle_beta": 95.0},
+              {"SGLaue": "2/m", "SGUniq": "b"}, start)
+          == (6.0, 7.0, 8.0, 90.0, 95.0, 90.0))
+
+    check("triclinic: every value comes straight from free_values, none derived",
+          logic.reconstruct_cell(
+              {"length_a": 1.0, "length_b": 2.0, "length_c": 3.0,
+               "angle_alpha": 70.0, "angle_beta": 80.0, "angle_gamma": 100.0},
+              {"SGLaue": "-1", "SGUniq": ""}, start)
+          == (1.0, 2.0, 3.0, 70.0, 80.0, 100.0))
+
+    check("a partial dict falls back to start_cell for anything missing",
+          logic.reconstruct_cell({}, {"SGLaue": "m3m", "SGUniq": ""}, start)
+          == (5.0, 5.0, 5.0, 90.0, 90.0, 90.0))
+
+
+def test_build_cell_param_specs_and_seed():
+    start_cells = {0: (5.196, 5.196, 13.309, 90.0, 90.0, 120.0)}  # real FeF3 R-3c cell
+    free_params = {0: logic.cell_free_params({"SGLaue": "3m1", "SGUniq": ""})}
+
+    specs = logic.build_cell_param_specs(free_params, start_cells,
+                                          length_drift_frac=0.15, angle_bounds_deg=2.0)
+    check("one ParamSpec per free cell parameter (a, c) — hexagonal-setting trigonal",
+          [(s.phase_index, s.name) for s in specs] == [(0, "length_a"), (0, "length_c")])
+    check("length dimensions use multiplicative perturbation",
+          all(s.kind == "multiplicative" for s in specs))
+    check("length bounds are +/- length_drift_frac around the checkpoint's own cell",
+          abs(specs[0].lo - 5.196 * 0.85) < 1e-9 and abs(specs[0].hi - 5.196 * 1.15) < 1e-9
+          and abs(specs[1].lo - 13.309 * 0.85) < 1e-9 and abs(specs[1].hi - 13.309 * 1.15) < 1e-9)
+
+    seed = logic.cell_seed_position(free_params, start_cells)
+    check("cell_seed_position returns the checkpoint's own current cell, in the same "
+          "dimension order as build_cell_param_specs (not an arbitrary universal guess "
+          "the way Size/Mustrain's fixed seed is)",
+          np.allclose(seed, [5.196, 13.309]))
+
+    # A monoclinic phase's free angle dimension must use ADDITIVE perturbation
+    # (an angle isn't a scale-varying quantity the way a length is — same
+    # reasoning as LOW_ANGLE_CUTOFF_PARAM's kind="additive").
+    mono_free = {0: logic.cell_free_params({"SGLaue": "2/m", "SGUniq": "b"})}
+    mono_cells = {0: (6.0, 7.0, 8.0, 90.0, 95.0, 90.0)}
+    mono_specs = logic.build_cell_param_specs(mono_free, mono_cells, angle_bounds_deg=2.0)
+    angle_spec = next(s for s in mono_specs if s.name == "angle_beta")
+    check("a free cell angle uses additive perturbation, not multiplicative",
+          angle_spec.kind == "additive")
+    check("angle bounds are +/- angle_bounds_deg around the checkpoint's own value",
+          abs(angle_spec.lo - 93.0) < 1e-9 and abs(angle_spec.hi - 97.0) < 1e-9)
+
+    # Multi-phase ordering: specs/seed must walk phases in sorted-index
+    # order, matching position_to_values()'s own phase-key convention.
+    two_phase_free = {1: ["length_a"], 0: ["length_a", "length_c"]}
+    two_phase_cells = {0: (5.0, 5.0, 6.0, 90.0, 90.0, 90.0), 1: (3.0, 3.0, 3.0, 90.0, 90.0, 90.0)}
+    two_phase_specs = logic.build_cell_param_specs(two_phase_free, two_phase_cells)
+    check("multi-phase specs are ordered by phase index, not insertion order",
+          [(s.phase_index, s.name) for s in two_phase_specs]
+          == [(0, "length_a"), (0, "length_c"), (1, "length_a")])
+    two_phase_seed = logic.cell_seed_position(two_phase_free, two_phase_cells)
+    check("multi-phase seed matches that same order",
+          np.allclose(two_phase_seed, [5.0, 6.0, 3.0]))
+
+
+def test_position_to_values_cell():
+    """Cell ParamSpecs reuse position_to_values() unchanged — same nested-
+    under-phase-key shape gsas2_swarm_worker.py's --values already expects
+    for Size/Mustrain, just with cell parameter names instead."""
+    start_cells = {0: (5.196, 5.196, 13.309, 90.0, 90.0, 120.0)}
+    free_params = {0: logic.cell_free_params({"SGLaue": "3m1", "SGUniq": ""})}
+    specs = logic.build_cell_param_specs(free_params, start_cells)
+    values = logic.position_to_values([5.3, 13.5], specs)
+    check("cell values land nested under the phase key, same as Size/Mustrain",
+          values == {"0": {"length_a": 5.3, "length_c": 13.5}})
+
+
 def test_evaluation_to_fitness():
     check("a sane result's fitness is its own Rwp",
           logic.evaluation_to_fitness({"rwp": 6.07, "sane": True, "error": None}) == 6.07)
@@ -774,6 +929,10 @@ if __name__ == "__main__":
     test_position_to_values_low_angle_cutoff()
     test_perturb_points_low_angle_cutoff_moves_away_from_a_zero_seed()
     test_build_param_specs_both_angle_cutoffs_together()
+    test_cell_free_params()
+    test_reconstruct_cell()
+    test_build_cell_param_specs_and_seed()
+    test_position_to_values_cell()
     test_evaluation_to_fitness()
     test_training_target()
     test_is_better_candidate()

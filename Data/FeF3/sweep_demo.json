@@ -1,8 +1,0 @@
-{
-  "pattern": "Data/FeF3/r3c 20.txt",
-  "gsasii_path": "/home/javierrojas/g2main/GSAS-II/GSASII",
-  "candidates": [
-    {"name": "ambient_pressure_structure", "instprm": "Data/FeF3/ws2.cu.prm", "cif": "Data/FeF3/fef3_r3c_ambient.cif"},
-    {"name": "high_pressure_structure", "instprm": "Data/FeF3/ws2.cu.prm", "cif": "Data/FeF3/fef3_r3c_cod2100647.cif"}
-  ]
-}

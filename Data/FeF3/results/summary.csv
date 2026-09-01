@@ -1,6 +1,0 @@
-stage,status,rwp_before,rwp_after
-background_scale,ok,nan,10.612556901969816
-sample_displacement,ok,10.612556901969816,10.612562993971153
-unit_cell,failed_bounds,10.612562993971153,10.6129192148132
-profile_instrument,failed_bounds,10.612562993971153,10.612809782686803
-profile_microstrain_size,failed_bounds,10.612562993971153,10.612436105277279

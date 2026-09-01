@@ -42,6 +42,14 @@ class SwarmRunConfig:
     # ~98% correlated on real data, causing most of a swarm run's
     # "insane" perturbations.
     mustrain_type: str = "isotropic"
+    # "microstrain_size" (default) or "cell" — see gsas2_swarm_optimize.
+    # py's --target help. Picks which checkpoint stage/parameter space
+    # this run searches; the two are separate searches, not combined.
+    target: str = "microstrain_size"
+    # --target cell only — see gsas2_swarm_optimize.py's --cell-length-
+    # drift/--cell-angle-bounds help for why these default to 0.15/2.0.
+    cell_length_drift: float = 0.15
+    cell_angle_bounds: float = 2.0
     # Off by default: every candidate's saved GSAS-II project gets
     # deleted immediately once it's known to have lost (only the current
     # best is kept, then copied to a clean best.gpx at the end) — a real
@@ -87,6 +95,13 @@ def validate_swarm_config(cfg: SwarmRunConfig) -> list:
     if cfg.max_workers is not None and cfg.max_workers < 1:
         problems.append("Max parallel workers must be at least 1 (or left blank for no limit).")
 
+    if cfg.target == "cell":
+        if not (0.0 < cfg.cell_length_drift < 1.0):
+            problems.append("Cell length drift must be a fraction between 0 and 1 "
+                             "(e.g. 0.15 for 15%).")
+        if cfg.cell_angle_bounds <= 0:
+            problems.append("Cell angle bounds must be greater than 0.")
+
     for label, bounds in (("Low-angle cutoff", cfg.low_angle_cutoff_bounds),
                            ("High-angle cutoff", cfg.high_angle_cutoff_bounds)):
         if bounds is None:
@@ -108,12 +123,17 @@ def build_swarm_command(cfg: SwarmRunConfig, script_path: str, python_exe: str =
            "--checkpoint", cfg.checkpoint,
            "--gsasii-path", cfg.gsasii_path,
            "--outdir", cfg.outdir,
+           "--target", cfg.target,
            "--outer-iterations", str(cfg.outer_iterations),
            "--perturbations", str(cfg.perturbations),
            "--surrogate-particles", str(cfg.surrogate_particles),
            "--surrogate-generations", str(cfg.surrogate_generations),
-           "--backend", cfg.backend,
-           "--mustrain-type", cfg.mustrain_type]
+           "--backend", cfg.backend]
+    if cfg.target == "cell":
+        cmd += ["--cell-length-drift", str(cfg.cell_length_drift),
+                "--cell-angle-bounds", str(cfg.cell_angle_bounds)]
+    else:
+        cmd += ["--mustrain-type", cfg.mustrain_type]
     if cfg.seed is not None:
         cmd += ["--seed", str(cfg.seed)]
     if cfg.max_workers is not None:

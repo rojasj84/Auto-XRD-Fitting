@@ -17,6 +17,17 @@ discovered, this generalizes: try many different starting points, keep
 whichever one GSAS-II's own refinement converges to the best *and
 physically sane* result from.
 
+Also searches unit cell parameters (see cell_free_params()/build_cell_
+param_specs() below), the same multi-start idea applied to
+gsas2_auto_refine.py's earlier unit_cell stage — matching a real scientist's
+own manual practice (nudge the cell until peaks look close, then let
+GSAS-II's local refinement do the rest) rather than trusting the single
+starting point a CIF happens to provide. The cell dimensions plug into the
+exact same ParamSpec/perturb_points/fit_surrogate/search_surrogate/PSO
+machinery below unchanged — only which ParamSpecs get built, and what a
+worker does with the resulting values, differs from the Size/Mustrain path
+(see gsas2_swarm_worker.py's --target flag).
+
 Why a surrogate model, not just raw PSO over real evaluations
 ---------------------------------------------------------------
 An earlier version of this module ran PSO directly against real GSAS-II
@@ -192,6 +203,173 @@ def build_param_specs(n_phases: int, size_bounds=(0.01, 1000.0),
     if high_angle_cutoff_bounds is not None:
         specs.append(ParamSpec(None, HIGH_ANGLE_CUTOFF_PARAM, *high_angle_cutoff_bounds,
                                 kind="additive"))
+    return specs
+
+
+# ---------------------------------------------------------------------------
+# Unit cell parameter space — one dimension per INDEPENDENT cell parameter
+# for a phase's actual crystal system (a cubic phase has one free length,
+# a,b,c/beta), not all six a/b/c/alpha/beta/gamma unconditionally like a
+# naive perturbation would. GSAS-II's own refinement enforces exactly this
+# symmetry constraint internally (confirmed against the installed source,
+# GSASIIstrIO.cellVary(), which every real Hessian LM refine call uses to
+# build its cell-parameter equivalences from SGData['SGLaue']/['SGUniq']) —
+# searching dimensions GSAS-II is going to constrain away anyway would just
+# waste perturbation/surrogate budget on directions that can't move
+# independently.
+# ---------------------------------------------------------------------------
+
+CELL_LENGTH_NAMES = ("length_a", "length_b", "length_c")
+CELL_ANGLE_NAMES = ("angle_alpha", "angle_beta", "angle_gamma")
+CELL_KEY_INDEX = {name: i for i, name in enumerate(CELL_LENGTH_NAMES + CELL_ANGLE_NAMES)}
+
+
+def cell_free_params(sgdata: dict) -> list:
+    """
+    Returns the direct-space cell parameter names (a subset of
+    CELL_LENGTH_NAMES + CELL_ANGLE_NAMES, matching G2Phase.get_cell()'s own
+    key names) that are actually independent for one phase's crystal
+    system, per its SGData['SGLaue'] (+ ['SGUniq'] for monoclinic, which of
+    a/b/c is the unique axis).
+
+    This table is the direct-space equivalent of GSASIIstrIO.cellVary()'s
+    Laue-class groupings (confirmed against the installed source,
+    GSAS-II/GSASII/GSASIIstrIO.py — every real GSAS-II refine call builds
+    its cell constraints from exactly this same SGLaue-based grouping), and
+    every (SGLaue, SGUniq) pairing below was confirmed directly against a
+    real GSAS-II install this session via GSASIIspc.SpcGroup() on one
+    representative space group per row (Fm-3m, P4/mmm, P21/c, C2/m, Pnma,
+    P-1, R-3c in both hexagonal and rhombohedral axes settings).
+
+    Raises ValueError for an SGLaue this table doesn't recognize, rather
+    than silently guessing a parameter shape that might not match what
+    GSAS-II will actually let move.
+    """
+    laue = sgdata.get("SGLaue")
+    if laue == "-1":
+        return ["length_a", "length_b", "length_c", "angle_alpha", "angle_beta", "angle_gamma"]
+    if laue == "2/m":
+        angle = {"a": "angle_alpha", "c": "angle_gamma"}.get(sgdata.get("SGUniq"), "angle_beta")
+        return ["length_a", "length_b", "length_c", angle]
+    if laue == "mmm":
+        return ["length_a", "length_b", "length_c"]
+    if laue in ("4/m", "4/mmm"):
+        return ["length_a", "length_c"]
+    if laue in ("6/m", "6/mmm", "3m1", "31m", "3"):
+        return ["length_a", "length_c"]
+    if laue in ("3R", "3mR"):
+        return ["length_a", "angle_alpha"]
+    if laue in ("m3", "m3m"):
+        return ["length_a"]
+    raise ValueError(f"unrecognized SGLaue {laue!r} — can't determine free cell parameters")
+
+
+def reconstruct_cell(free_values: dict, sgdata: dict, start_cell) -> tuple:
+    """
+    Fills in a full (a, b, c, alpha, beta, gamma) cell from `free_values`
+    (a {name: value} dict covering only the names cell_free_params()
+    returned for this phase's SGData) by deriving every symmetry-dependent
+    value (e.g. b=a for tetragonal, or the two fixed 90 deg angles for
+    orthorhombic) instead of leaving them at whatever start_cell happened
+    to have — the same equivalences cell_free_params()'s docstring
+    describes. `start_cell` (a, b, c, alpha, beta, gamma) supplies the
+    starting value for any independent parameter free_values doesn't
+    include (shouldn't normally happen — every name cell_free_params()
+    returns should be present — but keeps this defined rather than
+    KeyError-ing on a partial dict).
+    """
+    laue = sgdata.get("SGLaue")
+    uniq = sgdata.get("SGUniq")
+
+    def free(name):
+        return free_values.get(name, start_cell[CELL_KEY_INDEX[name]])
+
+    a = free("length_a")
+    if laue == "-1":
+        return (a, free("length_b"), free("length_c"),
+                free("angle_alpha"), free("angle_beta"), free("angle_gamma"))
+    if laue == "2/m":
+        b, c = free("length_b"), free("length_c")
+        alpha = free("angle_alpha") if uniq == "a" else 90.0
+        gamma = free("angle_gamma") if uniq == "c" else 90.0
+        beta = free("angle_beta") if uniq not in ("a", "c") else 90.0
+        return (a, b, c, alpha, beta, gamma)
+    if laue == "mmm":
+        return (a, free("length_b"), free("length_c"), 90.0, 90.0, 90.0)
+    if laue in ("4/m", "4/mmm"):
+        return (a, a, free("length_c"), 90.0, 90.0, 90.0)
+    if laue in ("6/m", "6/mmm", "3m1", "31m", "3"):
+        return (a, a, free("length_c"), 90.0, 90.0, 120.0)
+    if laue in ("3R", "3mR"):
+        alpha = free("angle_alpha")
+        return (a, a, a, alpha, alpha, alpha)
+    if laue in ("m3", "m3m"):
+        return (a, a, a, 90.0, 90.0, 90.0)
+    raise ValueError(f"unrecognized SGLaue {laue!r} — can't reconstruct cell")
+
+
+def cell_seed_position(free_params_per_phase: dict, start_cells: dict) -> np.ndarray:
+    """The flat starting-position vector matching build_cell_param_specs()'s
+    own dimension order exactly — the checkpoint's OWN current cell values
+    for whichever parameters are free, not an arbitrary universal guess the
+    way Size/Mustrain's fixed seed (10.0, 1000.0) is. This is the direct
+    swarm equivalent of what the scientist already does by hand: start from
+    a cell she already has some confidence in, then perturb around it,
+    rather than searching from scratch every time.
+
+    `free_params_per_phase`/`start_cells`: {phase_index: [...]} /
+    {phase_index: (a,b,c,alpha,beta,gamma)} — same shapes
+    build_cell_param_specs() takes; iterated in the same sorted-phase-index,
+    in-list order so the result lines up column-for-column with it."""
+    seed = []
+    for phase_index in sorted(free_params_per_phase):
+        cell = start_cells[phase_index]
+        for name in free_params_per_phase[phase_index]:
+            seed.append(cell[CELL_KEY_INDEX[name]])
+    return np.array(seed, dtype=float)
+
+
+def build_cell_param_specs(free_params_per_phase: dict, start_cells: dict,
+                            length_drift_frac: float = 0.15,
+                            angle_bounds_deg: float = 2.0) -> list:
+    """
+    One ParamSpec per free cell parameter (see cell_free_params()) per
+    phase, in `free_params_per_phase`'s (sorted phase index, in-list) order
+    — see cell_seed_position() for the matching starting-position vector.
+
+    `free_params_per_phase`: {phase_index: [names from cell_free_params()]}.
+    `start_cells`: {phase_index: (a, b, c, alpha, beta, gamma)} — each
+    phase's OWN current cell (from G2Phase.get_cell() against the
+    checkpoint), since unlike Size/Mustrain, cell parameters have no
+    universal physical scale a fixed absolute bound could cover — a
+    reasonable search width is inherently relative to wherever this
+    specific phase's cell already is.
+
+    Length dimensions (length_a/b/c) get "multiplicative" bounds
+    start*(1 +/- length_drift_frac) — the same fractional-drift framing as
+    gsas2_auto_refine.py's --max-cell-drift/cell_drift_ok, a knob already
+    familiar from the rest of this project. Angle dimensions get
+    "additive" bounds start +/- angle_bounds_deg (matches LOW_ANGLE_
+    CUTOFF_PARAM/HIGH_ANGLE_CUTOFF_PARAM's existing kind="additive"
+    pattern in build_param_specs — a multiplicative perturbation doesn't
+    mean anything consistent for a quantity like an angle that isn't
+    scale-varying the way a length is).
+    """
+    specs = []
+    for phase_index in sorted(free_params_per_phase):
+        cell = start_cells[phase_index]
+        for name in free_params_per_phase[phase_index]:
+            start = cell[CELL_KEY_INDEX[name]]
+            if name in CELL_LENGTH_NAMES:
+                specs.append(ParamSpec(phase_index, name,
+                                        start * (1 - length_drift_frac),
+                                        start * (1 + length_drift_frac),
+                                        kind="multiplicative"))
+            else:
+                specs.append(ParamSpec(phase_index, name,
+                                        start - angle_bounds_deg,
+                                        start + angle_bounds_deg,
+                                        kind="additive"))
     return specs
 
 

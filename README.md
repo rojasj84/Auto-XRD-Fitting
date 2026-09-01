@@ -1,6 +1,6 @@
 # Auto XRD Fitting
 
-Turnkey Rietveld refinement automation on top of [GSAS-II](https://subversion.xray.aps.anl.gov/trac/pyGSAS). Point it at a powder diffraction pattern, an instrument-parameter file, and a phase CIF, and it runs a full staged refinement — background, scale, cell, profile, microstrain/size, peak asymmetry, extinction, preferred orientation, atom positions — unattended, with no manual parameter tweaking.
+Turnkey Rietveld refinement automation on top of [GSAS-II](https://subversion.xray.aps.anl.gov/trac/pyGSAS). Point it at a powder diffraction pattern, an instrument-parameter file, and a phase CIF, and it runs a full staged refinement — background, scale, cell, profile, microstrain/size, thermal parameters, peak asymmetry, extinction, preferred orientation, atom positions — unattended, with no manual parameter tweaking.
 
 ## Why this exists
 

@@ -118,6 +118,36 @@ def test_validate_swarm_config_catches_bad_angle_cutoff_bounds():
               "a positive scale like Size/Mustrain)", problems == [])
 
 
+def test_validate_swarm_config_catches_bad_cell_bounds():
+    with tempfile.TemporaryDirectory() as tmp:
+        tmp = Path(tmp)
+        checkpoint = tmp / "checkpoint.gpx"
+        checkpoint.write_text("x")
+        gsasdir = tmp / "GSASII"
+        gsasdir.mkdir()
+
+        cfg = logic.SwarmRunConfig(
+            checkpoint=str(checkpoint), gsasii_path=str(gsasdir), outdir=str(tmp / "out"),
+            target="cell", cell_length_drift=1.5, cell_angle_bounds=-1.0,
+        )
+        problems = logic.validate_swarm_config(cfg)
+        check("cell length drift outside (0, 1) flagged",
+              any("cell length drift" in p.lower() for p in problems))
+        check("non-positive cell angle bounds flagged",
+              any("cell angle bounds" in p.lower() for p in problems))
+
+        # Same out-of-range values are NOT flagged when target isn't
+        # "cell" — they're simply unused/irrelevant then, not invalid.
+        cfg_unused = logic.SwarmRunConfig(
+            checkpoint=str(checkpoint), gsasii_path=str(gsasdir), outdir=str(tmp / "out"),
+            target="microstrain_size", cell_length_drift=1.5, cell_angle_bounds=-1.0,
+        )
+        problems_unused = logic.validate_swarm_config(cfg_unused)
+        check("cell bounds are only validated when target='cell'",
+              not any("cell length drift" in p.lower() or "cell angle bounds" in p.lower()
+                      for p in problems_unused))
+
+
 def test_build_swarm_command_includes_every_knob():
     cfg = logic.SwarmRunConfig(
         checkpoint="checkpoint.gpx", gsasii_path="/opt/GSASII", outdir="out",
@@ -148,6 +178,30 @@ def test_build_swarm_command_uniaxial_mustrain_type():
     cmd = logic.build_swarm_command(cfg, script_path="gsas2_swarm_optimize.py")
     check("uniaxial mustrain_type passed through",
           "--mustrain-type" in cmd and "uniaxial" in cmd)
+
+
+def test_build_swarm_command_target_cell():
+    cfg = logic.SwarmRunConfig(
+        checkpoint="checkpoint_03_pre_unit_cell.gpx", gsasii_path="/opt/GSASII", outdir="out",
+        target="cell", cell_length_drift=0.1, cell_angle_bounds=3.0,
+    )
+    cmd = logic.build_swarm_command(cfg, script_path="gsas2_swarm_optimize.py")
+    check("--target cell passed through", "--target" in cmd and "cell" in cmd)
+    check("--cell-length-drift passed through", "--cell-length-drift" in cmd and "0.1" in cmd)
+    check("--cell-angle-bounds passed through", "--cell-angle-bounds" in cmd and "3.0" in cmd)
+    check("--mustrain-type is NOT passed for --target cell (it's meaningless there)",
+          "--mustrain-type" not in cmd)
+
+
+def test_build_swarm_command_target_microstrain_size_default():
+    cfg = logic.SwarmRunConfig(checkpoint="c.gpx", gsasii_path="/opt/GSASII", outdir="out")
+    cmd = logic.build_swarm_command(cfg, script_path="gsas2_swarm_optimize.py")
+    check("--target microstrain_size passed through (the default)",
+          "--target" in cmd and "microstrain_size" in cmd)
+    check("--mustrain-type is still passed for the default target",
+          "--mustrain-type" in cmd)
+    check("--cell-length-drift/--cell-angle-bounds are NOT passed for the default target",
+          "--cell-length-drift" not in cmd and "--cell-angle-bounds" not in cmd)
 
 
 def test_build_swarm_command_keep_evaluations():
@@ -209,8 +263,11 @@ if __name__ == "__main__":
     test_validate_swarm_config_accepts_real_files()
     test_validate_swarm_config_allows_blank_max_workers()
     test_validate_swarm_config_catches_bad_angle_cutoff_bounds()
+    test_validate_swarm_config_catches_bad_cell_bounds()
     test_build_swarm_command_includes_every_knob()
     test_build_swarm_command_uniaxial_mustrain_type()
+    test_build_swarm_command_target_cell()
+    test_build_swarm_command_target_microstrain_size_default()
     test_build_swarm_command_keep_evaluations()
     test_build_swarm_command_omits_optional_none_fields()
     test_build_swarm_command_includes_angle_cutoff_bounds()

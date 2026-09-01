@@ -26,15 +26,19 @@ from gsas2_auto_refine import (  # noqa: E402
     Bounds,
     RefinementRunner,
     Stage,
+    angle_drift_ok,
     assess_fit_quality,
     build_protocol,
     cell_drift_ok,
     export_histogram_csv,
+    get_gof_stats,
     get_phase_cells,
     import_gsasiiscriptable,
     profile_params_sane,
     rwp_improved_or_stable,
+    scale_sane,
     seed_initial_scale,
+    uiso_sane,
     _pref_ori_fallbacks,
 )
 
@@ -255,17 +259,18 @@ class MustrainFallbackFakeProject(FakeProject):
             self._write_state_to(self.filename)
 
 
-class AtomsFallbackFakePhase(FakePhase):
+class ThermalFallbackFakePhase(FakePhase):
     """Extends FakePhase with a 'Mustrain' data shape (see
     MustrainFallbackFakePhase) plus a real clear_HAP_refinements() —
     tracks whether Mustrain was actually frozen, since the plain
     FakePhase stub used everywhere else doesn't define this method at
-    all (confirmed: build_protocol()'s atoms-stage fallbacks are the
-    first place this project calls clear_HAP_refinements(), so nothing
-    would have caught a typo/wrong-method-name bug there without a fake
-    that actually implements it — the same class of gap that let the
-    --refine-atoms "Atoms": "all" bug and the --lebail HAP-vs-phase-key
-    bug both ship unnoticed earlier this project)."""
+    all (confirmed: build_protocol()'s thermal_parameters-stage
+    fallbacks are the first place this project calls
+    clear_HAP_refinements(), so nothing would have caught a typo/
+    wrong-method-name bug there without a fake that actually implements
+    it — the same class of gap that let the --refine-atoms "Atoms":
+    "all" bug and the --lebail HAP-vs-phase-key bug both ship unnoticed
+    earlier this project)."""
 
     def __init__(self, name, cell, hist_name):
         super().__init__(name, cell)
@@ -280,15 +285,15 @@ class AtomsFallbackFakePhase(FakePhase):
         pass
 
 
-class AtomsFallbackFakeProject(FakeProject):
+class ThermalFallbackFakeProject(FakeProject):
     """
     Regression coverage for the real bug found on real data (both
-    Data/FeF3 and Data/MgO+MgBC): refining atom positions/Uiso while
-    Mustrain is still free (every stage in this protocol is cumulative —
-    see Stage.clear_hap's docstring) is correlated enough to send
-    Mustrain to a runaway value (107,466 seen on real MgO+MgBC data)
-    even when the underlying fit is genuinely, substantially better
-    (Rwp 12.4% -> 9.8% on that same run) — a bounds-check failure that
+    Data/FeF3 and Data/MgO+MgBC): refining atomic Uiso while Mustrain is
+    still free (every stage in this protocol is cumulative — see
+    Stage.clear_hap's docstring) is correlated enough to send Mustrain
+    to a runaway value (107,466 seen on real MgO+MgBC data) even when
+    the underlying fit is genuinely, substantially better (Rwp 12.4% ->
+    9.8% on that same run) — a bounds-check failure that
     reverting-and-moving-on alone would just throw away a real
     improvement on. do_refinements() here models exactly that: the fit
     always improves, but Mustrain only stays sane if clear_hap actually
@@ -298,7 +303,7 @@ class AtomsFallbackFakeProject(FakeProject):
     def __init__(self, rwp, phase_cells):
         super().__init__(rwp, phase_cells)
         self._hists = [ProfileFakeHist(self, name="fake hist")]
-        self._phases = [AtomsFallbackFakePhase(f"phase{i}", c, "fake hist")
+        self._phases = [ThermalFallbackFakePhase(f"phase{i}", c, "fake hist")
                          for i, c in enumerate(phase_cells)]
 
     def do_refinements(self, reflist):
@@ -460,6 +465,23 @@ def test_bounds_helpers():
     check("cell drift beyond bound rejected",
           not cell_drift_ok((5.0, 5.0, 5.0, 90, 90, 90), (6.5, 5.0, 5.0, 90, 90, 90), b))
 
+    # angle_drift_ok — the cell_free_params/reconstruct_cell-era counterpart
+    # to cell_drift_ok, for a phase whose crystal system leaves an angle
+    # free (monoclinic/triclinic — see gsas2_swarm_logic.cell_free_params).
+    # Absolute-degrees bound, not relative (see Bounds.max_angle_drift_deg's
+    # docstring): a monoclinic beta could plausibly refine from 95 to 98
+    # (a small, sane 3-degree move) or run away to 150 (unsound) — a
+    # relative-fraction bound the way cell_drift_ok uses for lengths would
+    # be a nonsensical way to judge that.
+    b_angle = Bounds(max_angle_drift_deg=5.0)
+    check("angle within bounds accepted",
+          angle_drift_ok((6.0, 7.0, 8.0, 90, 95.0, 90), (6.0, 7.0, 8.0, 90, 98.0, 90), b_angle))
+    check("angle drift beyond bound rejected",
+          not angle_drift_ok((6.0, 7.0, 8.0, 90, 95.0, 90), (6.0, 7.0, 8.0, 90, 150.0, 90), b_angle))
+    check("every angle unchanged (the common case — higher-symmetry phases never move an "
+          "angle at all, since GSAS-II's own cell constraints hold them fixed) trivially accepted",
+          angle_drift_ok((5.0, 5.0, 5.0, 90, 90, 90), (5.3, 5.3, 5.3, 90, 90, 90), b_angle))
+
     check("rwp improvement accepted", rwp_improved_or_stable(20.0, 15.0, b))
     check("rwp small worsening within tolerance accepted", rwp_improved_or_stable(20.0, 20.3, b))
     check("rwp large worsening rejected", not rwp_improved_or_stable(20.0, 30.0, b))
@@ -493,6 +515,32 @@ def test_bounds_helpers():
           profile_params_sane([0.0, float("nan"), 5.0], b))
     check("empty values list trivially accepted",
           profile_params_sane([], b))
+
+    # uiso_sane/scale_sane — the light-atom-Uiso and phase-fraction
+    # counterparts to profile_params_sane: neither Rwp trend, cell/angle
+    # drift, nor profile_params_sane would ever catch one atom's Uiso or
+    # one phase's Scale going unphysical (confirmed against the
+    # installed GSASIIscriptable.py source: neither has a built-in lower
+    # bound of its own).
+    b_uiso = Bounds(min_uiso=0.001)
+    check("uiso values above the floor accepted",
+          uiso_sane([0.02, 0.015, 0.008], b_uiso))
+    check("a negative uiso rejected",
+          not uiso_sane([0.02, -0.001], b_uiso))
+    check("a uiso right at the floor rejected (strictly greater required)",
+          not uiso_sane([0.0005], b_uiso))
+    check("uiso None/NaN entries skipped, not treated as failures",
+          uiso_sane([0.02, None, float("nan")], b_uiso))
+    check("empty uiso list trivially accepted", uiso_sane([], b_uiso))
+
+    b_scale = Bounds(min_scale=0.0)
+    check("positive scale values accepted", scale_sane([1.0, 0.3], b_scale))
+    check("a zero scale rejected (phase fraction must be strictly positive)",
+          not scale_sane([0.0], b_scale))
+    check("a negative scale rejected", not scale_sane([-0.5], b_scale))
+    check("scale None/NaN entries skipped, not treated as failures",
+          scale_sane([1.0, None, float("nan")], b_scale))
+    check("empty scale list trivially accepted", scale_sane([], b_scale))
 
 
 def test_seed_initial_scale():
@@ -598,35 +646,62 @@ def test_assess_fit_quality():
 
 def test_protocol_shape():
     stages = build_protocol(refine_atoms=False)
-    check("8 stages without atom refinement", len(stages) == 8)
+    check("9 stages without atom-position refinement", len(stages) == 9)
     # peak_asymmetry, extinction, and preferred_orientation are optional
     # even without --refine-atoms — see their docstrings in
     # build_protocol(): many phases genuinely show none of these effects,
-    # and that's not a run failure.
+    # and that's not a run failure. thermal_parameters is required (see
+    # its docstring: it's an expected step of a real refinement, not a
+    # "try it and see" lever), so it's deliberately not in this list.
     check("only peak_asymmetry, extinction, and preferred_orientation are optional",
           [s.name for s in stages if s.optional]
           == ["peak_asymmetry", "extinction", "preferred_orientation"])
 
-    stages_atoms = build_protocol(refine_atoms=True)
-    check("9 stages with atom refinement", len(stages_atoms) == 9)
-    check("atoms stage is marked optional", stages_atoms[-1].optional and stages_atoms[-1].name == "atoms")
     # Regression: G2Phase.set_refinements()'s "Atoms" handler does
     # `value.items()` on whatever's passed here — it needs a dict of
     # {atom_label: refinement_flags}, not a bare string. Passing "all"
     # directly raised AttributeError("'str' object has no attribute
-    # 'items'") on every real --refine-atoms run (confirmed against the
-    # installed GSASIIscriptable.py source and on real data) — silently
-    # swallowed as a normal optional-stage failure, so --refine-atoms
-    # could never actually refine anything and nothing said so loudly.
-    # The FakePhase.set_refinements() stub used everywhere else in this
-    # test suite is a no-op that accepts any shape, so only an explicit
-    # check like this one catches a bug like this.
+    # 'items'") on every real run that touches atoms (confirmed against
+    # the installed GSASIIscriptable.py source and on real data) —
+    # silently swallowed as a normal stage failure, so this stage could
+    # never actually refine anything and nothing said so loudly. The
+    # FakePhase.set_refinements() stub used everywhere else in this test
+    # suite is a no-op that accepts any shape, so only an explicit check
+    # like this one catches a bug like this.
+    thermal_stage = next(s for s in stages if s.name == "thermal_parameters")
+    check("thermal_parameters is required, not optional", not thermal_stage.optional)
+    thermal_value = thermal_stage.set_phase.get("Atoms")
+    check("thermal_parameters passes a dict, not a bare string, for 'Atoms'",
+          isinstance(thermal_value, dict))
+    check("thermal_parameters' dict uses valid refinement flag characters (only F/X/U)",
+          isinstance(thermal_value, dict)
+          and all(c in " FXU" for v in thermal_value.values() for c in v))
+    check("thermal_parameters refines Uiso only ('U'), not positions",
+          thermal_value == {"all": "U"})
+    check("thermal_parameters sits between profile_microstrain_size and extinction",
+          [s.name for s in stages].index("thermal_parameters")
+          == [s.name for s in stages].index("profile_microstrain_size") + 1
+          and [s.name for s in stages].index("thermal_parameters")
+          == [s.name for s in stages].index("extinction") - 1)
+
+    lebail_stages_no_thermal = build_protocol(refine_atoms=False, lebail=True)
+    check("thermal_parameters is skipped under --lebail (Uiso has no effect on "
+          "LeBail-extracted intensities)",
+          "thermal_parameters" not in [s.name for s in lebail_stages_no_thermal])
+
+    stages_atoms = build_protocol(refine_atoms=True)
+    check("10 stages with atom-position refinement", len(stages_atoms) == 10)
+    check("atoms stage is marked optional", stages_atoms[-1].optional and stages_atoms[-1].name == "atoms")
     atoms_value = stages_atoms[-1].set_phase.get("Atoms")
     check("atoms stage passes a dict, not a bare string, for 'Atoms'",
           isinstance(atoms_value, dict))
-    check("atoms stage's dict uses valid refinement flag characters (only F/X/U)",
-          isinstance(atoms_value, dict)
-          and all(c in " FXU" for v in atoms_value.values() for c in v))
+    check("atoms stage refines positions only ('X'), not thermal parameters",
+          atoms_value == {"all": "X"})
+    check("atoms stage has the Mustrain-freezing fallback ladder (positions alone are "
+          "also correlated enough with Mustrain to send it runaway - confirmed on real "
+          "FeF3 data, see Stage.clear_hap's docstring)",
+          [f.name for f in stages_atoms[-1].fallbacks]
+          == ["atoms_mustrain_frozen", "atoms_mustrain_and_size_frozen"])
 
     # Regression: refining both the histogram's own "Sample Parameters:
     # Scale" and the phase's HAP "Scale" (phase fraction) at the same time
@@ -697,15 +772,16 @@ def test_runner_accepts_converging_stages():
             (14.2, None),                                         # profile_instrument
             (13.8, None),                                         # peak_asymmetry (optional, ~2.8% better)
             (13.0, None),                                         # profile_microstrain_size
-            (12.7, None),                                         # extinction (optional, ~2.3% better)
+            (12.5, None),                                         # thermal_parameters
+            (12.2, None),                                         # extinction (optional, ~2.4% better)
         ])
         proj = FakeProject(rwp=20.0, phase_cells=[start_cell])
         stages = build_protocol(refine_atoms=False)
         runner = RefinementRunner(proj, outdir, Bounds(), log=lambda m: None)
         results = runner.run(stages)
 
-        check("all 8 stages ran", len(results) == 8)
-        check("all 5 mandatory stages ok",
+        check("all 9 stages ran", len(results) == 9)
+        check("all 6 mandatory stages ok",
               all(r.status == "ok" for r in results if not r.optional))
         check("peak_asymmetry and extinction (optional) accepted their genuine improvement",
               next(r for r in results if r.name == "peak_asymmetry").status == "ok"
@@ -721,8 +797,8 @@ def test_runner_accepts_converging_stages():
         check("preferred_orientation failed gracefully as optional, not counted as a run failure",
               results[-1].name == "preferred_orientation" and results[-1].optional
               and results[-1].status != "ok")
-        check("rwp after the last mandatory stage (profile_microstrain_size) is the last real improvement",
-              next(r for r in results if r.name == "profile_microstrain_size").rwp_after == 13.0)
+        check("rwp after the last mandatory stage (thermal_parameters) is the last real improvement",
+              next(r for r in results if r.name == "thermal_parameters").rwp_after == 12.5)
         check("checkpoint files were written", len(proj.saved_to) >= 5)
 
 
@@ -746,6 +822,7 @@ def test_runner_accepts_first_stage_with_no_rwp_baseline():
             (10.6, None),  # profile_instrument
             (10.6, None),  # peak_asymmetry (optional; flat, so it won't pass, but that's fine)
             (10.6, None),  # profile_microstrain_size
+            (10.6, None),  # thermal_parameters
             (10.6, None),  # extinction (optional; flat, so it won't pass, but that's fine)
         ])
         proj = FakeProject(rwp=float("nan"), phase_cells=[start_cell])
@@ -757,7 +834,7 @@ def test_runner_accepts_first_stage_with_no_rwp_baseline():
               results[0].name == "background_scale" and results[0].status == "ok")
         check("stage 1's rwp_before recorded as NaN (informational, not a failure)",
               results[0].rwp_before != results[0].rwp_before)  # NaN != NaN
-        check("all 5 mandatory stages ran without a spurious rollback",
+        check("all 6 mandatory stages ran without a spurious rollback",
               all(r.status == "ok" for r in results if not r.optional))
 
 
@@ -772,14 +849,15 @@ def test_runner_rolls_back_diverged_stage():
             (11.0, None),  # profile_instrument, runs post-rollback
             (10.5, None),  # peak_asymmetry (optional; ~4.5% better than 11.0 — passes)
             (10.0, None),  # profile_microstrain_size
-            (9.7, None),   # extinction (optional; ~3% better than 10.0 — passes)
+            (9.8, None),   # thermal_parameters
+            (9.5, None),   # extinction (optional; ~3.1% better than 9.8 — passes)
         ])
         proj = FakeProject(rwp=20.0, phase_cells=[start_cell])
         stages = build_protocol(refine_atoms=False)
         runner = RefinementRunner(proj, outdir, Bounds(max_cell_drift_frac=0.15), log=lambda m: None)
         results = runner.run(stages)
 
-        check("8 stages recorded", len(results) == 8)
+        check("9 stages recorded", len(results) == 9)
         check("stage 3 (unit_cell) failed bounds",
               results[2].name == "unit_cell" and results[2].status == "failed_bounds")
         check("subsequent mandatory stages still ran after rollback",
@@ -829,7 +907,8 @@ def test_runner_rolls_back_diverged_profile_params():
             (16.8, None),  # profile_instrument: Rwp still improves...
             (16.5, None),  # peak_asymmetry (optional; ~2.9% better than 17.0 post-rollback — passes)
             (16.0, None),  # profile_microstrain_size
-            (15.7, None),  # extinction (optional; ~1.9% better than 16.0 — passes)
+            (15.8, None),  # thermal_parameters
+            (15.5, None),  # extinction (optional; ~1.9% better than 15.8 — passes)
         ])
         u_values = [0.0, 0.0, 0.0, 2_260_583.58]  # ...but U blows up right here
         proj = ProfileFakeProject(rwp=20.0, phase_cells=[start_cell], u_values=u_values)
@@ -837,7 +916,7 @@ def test_runner_rolls_back_diverged_profile_params():
         runner = RefinementRunner(proj, outdir, Bounds(), log=lambda m: None)
         results = runner.run(stages)
 
-        check("8 stages recorded", len(results) == 8)
+        check("9 stages recorded", len(results) == 9)
         profile_stage = next(r for r in results if r.name == "profile_instrument")
         check("profile_instrument rolled back despite Rwp improving and cell staying put",
               profile_stage.status == "failed_bounds")
@@ -888,15 +967,57 @@ def test_runner_falls_back_to_simpler_profile_model():
               "isotropic_mustrain" in result.detail)
 
 
-def test_runner_freezes_mustrain_for_atoms_fallback():
+def test_runner_freezes_mustrain_for_thermal_fallback():
     """
-    Drives RefinementRunner.run_stage() with the real "atoms" Stage from
-    build_protocol(refine_atoms=True) against AtomsFallbackFakeProject
-    (see its docstring), whose Mustrain only stays sane when clear_hap
+    Drives RefinementRunner.run_stage() with the real "thermal_parameters"
+    Stage from build_protocol() against ThermalFallbackFakeProject (see
+    its docstring), whose Mustrain only stays sane when clear_hap
     actually froze it. Confirms the primary attempt (Mustrain left free)
     fails bounds despite a genuinely better fit, and the
-    "atoms_mustrain_frozen" fallback both keeps that improvement and
+    "thermal_mustrain_frozen" fallback both keeps that improvement and
     keeps Mustrain sane — the exact recovery this fallback exists for.
+    """
+    with tempfile.TemporaryDirectory() as tmp:
+        outdir = Path(tmp)
+        start_cell = (4.2, 4.2, 4.2, 90, 90, 90)
+
+        thermal_stage = next(s for s in build_protocol(refine_atoms=False)
+                              if s.name == "thermal_parameters")
+
+        # A fallback ladder reloads the pre-stage checkpoint before every
+        # attempt — see set_active_project_class's docstring for why this
+        # is needed for ThermalFallbackFakeProject's modeling to survive
+        # past the primary (Mustrain-still-free) attempt.
+        set_active_project_class(ThermalFallbackFakeProject)
+        try:
+            proj = ThermalFallbackFakeProject(rwp=20.0, phase_cells=[start_cell])
+            runner = RefinementRunner(proj, outdir, Bounds(), log=lambda m: None)
+            start_cells = {0: runner._cell(0)}
+            result = runner.run_stage(thermal_stage, 1, start_cells)
+        finally:
+            set_active_project_class(FakeProject)
+
+        check("thermal_parameters stage succeeded via the Mustrain-frozen fallback",
+              result.status == "ok")
+        check("detail names the thermal_mustrain_frozen fallback, not the primary",
+              "thermal_mustrain_frozen" in result.detail)
+        check("the genuine Rwp improvement was kept, not discarded",
+              result.rwp_after == 15.0)
+
+
+def test_runner_freezes_mustrain_for_atoms_fallback():
+    """
+    Regression coverage for the real bug found on real FeF3 data:
+    refining atom POSITIONS alone (not just Uiso — see thermal_
+    parameters' matching test above) is also correlated enough with
+    Mustrain (still free — every stage is cumulative) to send it to a
+    runaway value (19,239 seen on real data). Drives RefinementRunner.
+    run_stage() with the real "atoms" Stage from build_protocol(
+    refine_atoms=True) against ThermalFallbackFakeProject (reused as-is
+    — it's a generic Mustrain-freezing-fallback fake, not specific to
+    which stage triggers it) and confirms the primary attempt fails
+    bounds despite a genuinely better fit, and the "atoms_mustrain_
+    frozen" fallback both keeps that improvement and keeps Mustrain sane.
     """
     with tempfile.TemporaryDirectory() as tmp:
         outdir = Path(tmp)
@@ -904,13 +1025,13 @@ def test_runner_freezes_mustrain_for_atoms_fallback():
 
         atoms_stage = next(s for s in build_protocol(refine_atoms=True) if s.name == "atoms")
 
-        # A fallback ladder reloads the pre-stage checkpoint before every
-        # attempt — see set_active_project_class's docstring for why this
-        # is needed for AtomsFallbackFakeProject's modeling to survive
-        # past the primary (Mustrain-still-free) attempt.
-        set_active_project_class(AtomsFallbackFakeProject)
+        set_active_project_class(ThermalFallbackFakeProject)
         try:
-            proj = AtomsFallbackFakeProject(rwp=20.0, phase_cells=[start_cell])
+            # rwp=10.0, below Bounds().max_rwp_for_atom_refinement (15.0)
+            # — this test is about the fallback ladder, not the Rwp gate
+            # (see test_runner_skips_atoms_stage_above_rwp_threshold for
+            # that).
+            proj = ThermalFallbackFakeProject(rwp=10.0, phase_cells=[start_cell])
             runner = RefinementRunner(proj, outdir, Bounds(), log=lambda m: None)
             start_cells = {0: runner._cell(0)}
             result = runner.run_stage(atoms_stage, 1, start_cells)
@@ -922,7 +1043,74 @@ def test_runner_freezes_mustrain_for_atoms_fallback():
         check("detail names the atoms_mustrain_frozen fallback, not the primary",
               "atoms_mustrain_frozen" in result.detail)
         check("the genuine Rwp improvement was kept, not discarded",
-              result.rwp_after == 15.0)
+              result.rwp_after == 5.0)
+
+
+def test_runner_skips_atoms_stage_above_rwp_threshold():
+    """
+    Regression coverage for Bounds.max_rwp_for_atom_refinement: the
+    optional atom-POSITION stage should be skipped outright — without
+    ever calling do_refinements() — once Rwp is worse than the
+    threshold, rather than attempting a refinement that's more likely
+    to diverge than help against a fit that hasn't converged yet.
+    """
+    with tempfile.TemporaryDirectory() as tmp:
+        outdir = Path(tmp)
+        start_cell = (4.2, 4.2, 4.2, 90, 90, 90)
+        atoms_stage = next(s for s in build_protocol(refine_atoms=True) if s.name == "atoms")
+
+        set_active_outcomes([])  # nothing scripted -- popping would raise IndexError
+        proj = FakeProject(rwp=20.0, phase_cells=[start_cell])  # above the 15.0 default threshold
+        runner = RefinementRunner(proj, outdir, Bounds(), log=lambda m: None)
+        start_cells = {0: runner._cell(0)}
+        result = runner.run_stage(atoms_stage, 1, start_cells)
+
+        check("atoms stage is skipped, not attempted, when Rwp is too high",
+              result.status == "skipped")
+        check("skipped result records the actual Rwp as both before and after "
+              "(nothing changed)",
+              result.rwp_before == 20.0 and result.rwp_after == 20.0)
+        check("no checkpoint rollback/reload happened -- the project is untouched",
+              proj.rwp == 20.0)
+
+
+def test_runner_runs_atoms_stage_below_rwp_threshold():
+    """The same gate must NOT fire when Rwp is already good enough --
+    confirms the threshold is a real boundary, not something that
+    accidentally always skips."""
+    with tempfile.TemporaryDirectory() as tmp:
+        outdir = Path(tmp)
+        start_cell = (4.2, 4.2, 4.2, 90, 90, 90)
+        atoms_stage = next(s for s in build_protocol(refine_atoms=True) if s.name == "atoms")
+
+        set_active_outcomes([(9.5, None)])  # a real attempt, genuinely improving
+        proj = FakeProject(rwp=10.0, phase_cells=[start_cell])  # below the 15.0 default threshold
+        runner = RefinementRunner(proj, outdir, Bounds(), log=lambda m: None)
+        start_cells = {0: runner._cell(0)}
+        result = runner.run_stage(atoms_stage, 1, start_cells)
+
+        check("atoms stage is actually attempted when Rwp is already good enough",
+              result.status == "ok" and result.rwp_after == 9.5)
+
+
+def test_get_gof_stats():
+    class FakeGpxForGof:
+        def __init__(self, rvals):
+            self.data = {"Covariance": {"data": {"Rvals": rvals}}}
+
+    stats = get_gof_stats(FakeGpxForGof(
+        {"GOF": 6.927489140620666, "chisq": 359109.9616521413, "Nobs": 7501, "Nvars": 18}))
+    check("gof read and cast to float", stats["gof"] == 6.927489140620666)
+    check("chisq read and cast to float", stats["chisq"] == 359109.9616521413)
+    check("nobs read and cast to int", stats["nobs"] == 7501 and isinstance(stats["nobs"], int))
+    check("nvars read and cast to int", stats["nvars"] == 18 and isinstance(stats["nvars"], int))
+
+    class FakeGpxNoCovariance:
+        data = {}
+
+    check("no Covariance data yet (e.g. every stage failed and reverted) returns {} "
+          "rather than raising",
+          get_gof_stats(FakeGpxNoCovariance()) == {})
 
 
 def test_runner_finds_correct_preferred_orientation_axis():
@@ -1212,7 +1400,11 @@ if __name__ == "__main__":
     test_runner_finds_correct_preferred_orientation_axis()
     test_pref_ori_fallbacks_shape()
     test_runner_finds_per_phase_preferred_orientation()
+    test_runner_freezes_mustrain_for_thermal_fallback()
     test_runner_freezes_mustrain_for_atoms_fallback()
+    test_runner_skips_atoms_stage_above_rwp_threshold()
+    test_runner_runs_atoms_stage_below_rwp_threshold()
+    test_get_gof_stats()
     test_runner_survives_solver_exception()
     test_runner_catches_swallowed_solver_failure()
     test_rwp_handles_residuals_as_method_or_property()

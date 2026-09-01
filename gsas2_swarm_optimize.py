@@ -38,14 +38,27 @@ trusting it. Repeats for --outer-iterations, each time perturbing around
 whatever the best verified point is so far.
 
 This does NOT replace gsas2_auto_refine.py — it picks up from one of its
-checkpoints (normally checkpoint_0N_pre_profile_microstrain_size.gpx)
-and hands back a candidate replacement for just that one stage's result.
+checkpoints and hands back a candidate replacement for just that one
+stage's result. --target microstrain_size (the default) picks up from
+checkpoint_0N_pre_profile_microstrain_size.gpx; --target cell picks up
+from checkpoint_03_pre_unit_cell.gpx and searches each phase's independent
+unit cell parameters instead (see gsas2_swarm_logic.py's module docstring
+for why these are two separate searches, not one combined one) — matching
+a real scientist's own manual practice of nudging the cell until peaks
+look close, then letting GSAS-II's local refinement do the rest, rather
+than trusting the CIF's one starting cell.
 
 Example:
     python3 gsas2_swarm_optimize.py \\
         --checkpoint results/sample/checkpoint_06_pre_profile_microstrain_size.gpx \\
         --gsasii-path /path/to/GSASII \\
         --outdir results/sample_swarm \\
+        --outer-iterations 20 --perturbations 50 --backend auto
+
+    python3 gsas2_swarm_optimize.py \\
+        --checkpoint results/sample/checkpoint_03_pre_unit_cell.gpx \\
+        --gsasii-path /path/to/GSASII \\
+        --outdir results/sample_cell_swarm --target cell \\
         --outer-iterations 20 --perturbations 50 --backend auto
 """
 
@@ -85,17 +98,31 @@ def _no_window_kwargs() -> dict:
 
 def parse_args(argv=None):
     p = argparse.ArgumentParser(
-        description="Surrogate-assisted search over Size/Mustrain starting points, "
-                    "picking up from a gsas2_auto_refine.py checkpoint.",
+        description="Surrogate-assisted search over Size/Mustrain (or unit cell — see "
+                    "--target) starting points, picking up from a gsas2_auto_refine.py "
+                    "checkpoint.",
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
     p.add_argument("--checkpoint", required=True, type=Path,
-                    help="A checkpoint_0N_pre_profile_microstrain_size.gpx from a real "
-                         "gsas2_auto_refine.py run. Never modified.")
+                    help="A checkpoint_0N_pre_profile_microstrain_size.gpx (--target "
+                         "microstrain_size, the default) or checkpoint_03_pre_unit_cell.gpx "
+                         "(--target cell) from a real gsas2_auto_refine.py run. Never modified.")
     p.add_argument("--gsasii-path", required=True, type=Path)
     p.add_argument("--outdir", required=True, type=Path,
                     help="Every real evaluation gets its own subfolder here "
                          "(evaluations/iter<N>_<label>/) plus the final best result.")
+    p.add_argument("--target", choices=("microstrain_size", "cell"), default="microstrain_size",
+                    help="'microstrain_size' (default): search each phase's isotropic Size and "
+                         "Mustrain, picking up from a checkpoint_0N_pre_profile_microstrain_"
+                         "size.gpx. 'cell': search each phase's independent unit cell "
+                         "parameters (see gsas2_swarm_logic.cell_free_params — how many and "
+                         "which of a/b/c/alpha/beta/gamma depends on the phase's crystal "
+                         "system), picking up from a checkpoint_03_pre_unit_cell.gpx — "
+                         "matching a real scientist's own manual practice of nudging the cell "
+                         "until peaks look close, then letting GSAS-II's local refinement do "
+                         "the rest, instead of trusting the CIF's one starting cell. The two "
+                         "targets are separate searches, not combined in one run — see "
+                         "gsas2_swarm_logic.py's module docstring.")
     p.add_argument("--outer-iterations", type=int, default=20,
                     help="How many perturb-evaluate-fit-propose-verify rounds to run "
                          "(default 20). Compute time is cheap here by design — see this "
@@ -183,6 +210,18 @@ def parse_args(argv=None):
                          "along that near-degenerate direction. See gsas2_swarm_logic.build_"
                          "param_specs' docstring. 'uniaxial' is available for phases where the "
                          "extra anisotropic freedom is worth that risk.")
+    p.add_argument("--cell-length-drift", type=float, default=0.15,
+                    help="--target cell only: search each free cell length (a/b/c) within "
+                         "+/- this fraction of the checkpoint's own starting value (default "
+                         "0.15 = 15%%) — reuses gsas2_auto_refine.py's --max-cell-drift naming "
+                         "convention. Unlike --size-bounds/--mustrain-bounds, this is always "
+                         "relative to each phase's own cell, not a fixed absolute range — cell "
+                         "lengths have no universal physical scale.")
+    p.add_argument("--cell-angle-bounds", type=float, default=2.0,
+                    help="--target cell only: search each free cell angle (only present for "
+                         "monoclinic/triclinic phases — see gsas2_swarm_logic.cell_free_params) "
+                         "within +/- this many degrees of the checkpoint's own starting value "
+                         "(default 2.0).")
     p.add_argument("--low-angle-cutoff-bounds", type=float, nargs=2, default=None,
                     metavar=("LO", "HI"),
                     help="Also search how many degrees of low-angle data to discard from the "
@@ -229,15 +268,33 @@ def parse_args(argv=None):
     return p.parse_args(argv)
 
 
-def _count_phases(checkpoint: Path, gsasii_path: Path) -> int:
+def _load_phase_info(checkpoint: Path, gsasii_path: Path) -> dict:
+    """{phase_index: {"sgdata": ..., "cell": (a,b,c,alpha,beta,gamma)}} for
+    every phase in the checkpoint — n_phases is len() of this. The SGData/
+    cell are only used by --target cell (to build crystal-system-aware
+    ParamSpecs — see gsas2_swarm_logic.cell_free_params/
+    build_cell_param_specs), but this replaces the old phase-count-only
+    _count_phases() for both targets since it's a strict superset and
+    opening the checkpoint is the expensive part, not reading two extra
+    fields off each phase already opened."""
     sys.path.insert(0, str(SCRIPT_DIR))
     from gsas2_auto_refine import import_gsasiiscriptable
     G2sc = import_gsasiiscriptable(gsasii_path)
     gpx = G2sc.G2Project(str(checkpoint))
-    return len(gpx.phases())
+    info = {}
+    for i in range(len(gpx.phases())):
+        phase = gpx.phase(i)
+        cell = phase.get_cell()
+        info[i] = {
+            "sgdata": phase.data["General"]["SGData"],
+            "cell": (cell["length_a"], cell["length_b"], cell["length_c"],
+                     cell["angle_alpha"], cell["angle_beta"], cell["angle_gamma"]),
+        }
+    return info
 
 
-def evaluate_point(checkpoint: Path, gsasii_path: Path, outdir: Path, values: dict) -> dict:
+def evaluate_point(checkpoint: Path, gsasii_path: Path, outdir: Path, values: dict,
+                    target: str = "microstrain_size") -> dict:
     """Runs one gsas2_swarm_worker.py subprocess for one candidate point
     and returns its parsed JSON result. Never raises — a subprocess that
     fails to produce parseable output is reported as an error result,
@@ -245,7 +302,7 @@ def evaluate_point(checkpoint: Path, gsasii_path: Path, outdir: Path, values: di
     python_exe = resolve_gsasii_python(str(gsasii_path), sys.executable)
     cmd = [python_exe, "-u", str(WORKER_SCRIPT),
            "--checkpoint", str(checkpoint), "--gsasii-path", str(gsasii_path),
-           "--outdir", str(outdir), "--values", json.dumps(values)]
+           "--outdir", str(outdir), "--target", target, "--values", json.dumps(values)]
     try:
         proc = subprocess.run(cmd, capture_output=True, text=True, stdin=subprocess.DEVNULL,
                                **_no_window_kwargs())
@@ -261,7 +318,8 @@ def evaluate_point(checkpoint: Path, gsasii_path: Path, outdir: Path, values: di
 
 
 def evaluate_batch(checkpoint: Path, gsasii_path: Path, batch_outdir: Path,
-                    points: np.ndarray, param_specs: list, max_workers) -> list:
+                    points: np.ndarray, param_specs: list, max_workers,
+                    target: str = "microstrain_size") -> list:
     """Evaluates every row of `points` in parallel, each in its own
     batch_outdir/point<i>/ subfolder. Returns (outdir, result) pairs in
     the SAME order as `points` (not completion order), so callers can zip
@@ -274,7 +332,7 @@ def evaluate_batch(checkpoint: Path, gsasii_path: Path, batch_outdir: Path,
         outdirs = [batch_outdir / f"point{i:03d}" for i in range(len(points))]
         futures = [
             pool.submit(evaluate_point, checkpoint, gsasii_path, outdir,
-                        logic.position_to_values(pos, param_specs))
+                        logic.position_to_values(pos, param_specs), target)
             for outdir, pos in zip(outdirs, points)
         ]
         return list(zip(outdirs, (f.result() for f in futures)))
@@ -362,6 +420,15 @@ def main(argv=None) -> int:
             print(f"ERROR: {flag} must satisfy 0 <= LO < HI, got ({lo}, {hi})", file=sys.stderr)
             return 2
 
+    if not (0.0 < args.cell_length_drift < 1.0):
+        print(f"ERROR: --cell-length-drift must satisfy 0 < value < 1, got "
+              f"{args.cell_length_drift}", file=sys.stderr)
+        return 2
+    if args.cell_angle_bounds <= 0:
+        print(f"ERROR: --cell-angle-bounds must be > 0, got {args.cell_angle_bounds}",
+              file=sys.stderr)
+        return 2
+
     try:
         backend = logic.pick_backend(args.backend)
     except RuntimeError as exc:
@@ -369,10 +436,11 @@ def main(argv=None) -> int:
         return 2
 
     try:
-        n_phases = _count_phases(args.checkpoint, args.gsasii_path)
+        phase_info = _load_phase_info(args.checkpoint, args.gsasii_path)
     except Exception as exc:  # noqa: BLE001
         print(f"ERROR: could not open --checkpoint: {exc!r}", file=sys.stderr)
         return 2
+    n_phases = len(phase_info)
 
     args.outdir.mkdir(parents=True, exist_ok=True)
     eval_dir = args.outdir / "evaluations"
@@ -380,33 +448,48 @@ def main(argv=None) -> int:
                                 if args.low_angle_cutoff_bounds is not None else None)
     high_angle_cutoff_bounds = (tuple(args.high_angle_cutoff_bounds)
                                  if args.high_angle_cutoff_bounds is not None else None)
-    param_specs = logic.build_param_specs(n_phases, tuple(args.size_bounds),
-                                           tuple(args.mustrain_bounds), args.mustrain_type,
-                                           low_angle_cutoff_bounds, high_angle_cutoff_bounds)
+
+    if args.target == "cell":
+        # See gsas2_swarm_logic.cell_free_params — how many/which cell
+        # parameters are actually independent depends on each phase's own
+        # crystal system, confirmed against the installed GSASIIstrIO.
+        # cellVary(), which every real GSAS-II refine call uses to build
+        # the same symmetry constraints.
+        free_params_per_phase = {i: logic.cell_free_params(info["sgdata"])
+                                  for i, info in phase_info.items()}
+        start_cells = {i: info["cell"] for i, info in phase_info.items()}
+        param_specs = logic.build_cell_param_specs(
+            free_params_per_phase, start_cells, args.cell_length_drift, args.cell_angle_bounds)
+        x0 = logic.cell_seed_position(free_params_per_phase, start_cells)
+    else:
+        param_specs = logic.build_param_specs(n_phases, tuple(args.size_bounds),
+                                               tuple(args.mustrain_bounds), args.mustrain_type,
+                                               low_angle_cutoff_bounds, high_angle_cutoff_bounds)
+        # Seed point: the same starting values gsas2_auto_refine.py's own
+        # profile_microstrain_size primary config uses (isotropic Size=10,
+        # Mustrain=1000 per phase, doubled for uniaxial's eq/ax) — so the
+        # first thing this script reports is directly comparable to what
+        # the deterministic pipeline alone would have found from this
+        # checkpoint. The seed for low/high_angle_cutoff (when enabled) is
+        # 0.0 — no extra trim beyond whatever the checkpoint already has —
+        # for the same reason. Appended in the SAME order build_param_
+        # specs adds them (low before high).
+        per_phase_seed = [10.0, 1000.0] if args.mustrain_type == "isotropic" else [10.0, 1000.0, 1000.0]
+        x0 = np.tile(per_phase_seed, n_phases)
+        if low_angle_cutoff_bounds is not None:
+            x0 = np.append(x0, 0.0)
+        if high_angle_cutoff_bounds is not None:
+            x0 = np.append(x0, 0.0)
     n_dims = len(param_specs)
     rng = np.random.default_rng(args.seed)
 
     print(f"Searching {n_dims} dimension(s) across {n_phases} phase(s) from "
-          f"{args.checkpoint}, backend={backend!r}, mustrain_type={args.mustrain_type!r} ...",
-          flush=True)
+          f"{args.checkpoint}, target={args.target!r}, backend={backend!r}"
+          + (f", mustrain_type={args.mustrain_type!r}" if args.target != "cell" else "")
+          + " ...", flush=True)
 
-    # Seed point: the same starting values gsas2_auto_refine.py's own
-    # profile_microstrain_size primary config uses (isotropic Size=10,
-    # Mustrain=1000 per phase, doubled for uniaxial's eq/ax) — so the
-    # first thing this script reports is directly comparable to what the
-    # deterministic pipeline alone would have found from this checkpoint.
-    # The seed for low/high_angle_cutoff (when enabled) is 0.0 — no extra
-    # trim beyond whatever the checkpoint already has — for the same
-    # reason. Appended in the SAME order build_param_specs adds them
-    # (low before high).
-    per_phase_seed = [10.0, 1000.0] if args.mustrain_type == "isotropic" else [10.0, 1000.0, 1000.0]
-    x0 = np.tile(per_phase_seed, n_phases)
-    if low_angle_cutoff_bounds is not None:
-        x0 = np.append(x0, 0.0)
-    if high_angle_cutoff_bounds is not None:
-        x0 = np.append(x0, 0.0)
     seed_result = evaluate_point(args.checkpoint, args.gsasii_path, eval_dir / "seed",
-                                  logic.position_to_values(x0, param_specs))
+                                  logic.position_to_values(x0, param_specs), args.target)
     seed_fitness = logic.evaluation_to_fitness(seed_result)
     print(f"  seed point: Rwp={seed_result.get('rwp')}  sane={seed_result.get('sane')}", flush=True)
 
@@ -436,7 +519,7 @@ def main(argv=None) -> int:
         candidates = logic.perturb_points(best_x, param_specs, args.perturbations, rng,
                                            args.close_frac, args.close_sigma, args.far_sigma)
         batch = evaluate_batch(args.checkpoint, args.gsasii_path, iter_dir / "perturb",
-                                candidates, param_specs, args.max_workers)
+                                candidates, param_specs, args.max_workers, args.target)
         results = [r for _, r in batch]
         fitnesses = np.array([logic.evaluation_to_fitness(r) for r in results])
 
@@ -485,7 +568,7 @@ def main(argv=None) -> int:
             predicted_fitnesses = [c[1] for c in proposed_candidates]
             proposed_batch = evaluate_batch(
                 args.checkpoint, args.gsasii_path, iter_dir / "surrogate_proposals",
-                proposed_positions, param_specs, args.max_workers)
+                proposed_positions, param_specs, args.max_workers, args.target)
             proposed_results = [r for _, r in proposed_batch]
             proposed_fitnesses = [logic.evaluation_to_fitness(r) for r in proposed_results]
 

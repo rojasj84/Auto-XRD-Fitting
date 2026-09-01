@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-gsas2_swarm_worker.py — evaluates ONE candidate starting point for the
-Size/Mustrain continuous parameters and reports the Rwp GSAS-II's own
+gsas2_swarm_worker.py — evaluates ONE candidate starting point (Size/
+Mustrain, or unit cell — see --target) and reports the Rwp GSAS-II's own
 Hessian LM refinement converges to from there.
 
 This is the CPU-side "fitness function" gsas2_swarm_optimize.py's swarm
@@ -10,12 +10,17 @@ module docstring for why the swarm's own bookkeeping stays on plain CPU
 numpy rather than needing a GPU — this evaluation, a full GSAS-II
 refinement call, is what actually costs time, not the swarm math).
 
-Loads a checkpoint .gpx (produced by gsas2_auto_refine.py — normally
-checkpoint_0N_pre_profile_microstrain_size.gpx from a real run, so the
-swarm starts from the same already-converged Background/Scale/Cell/
-DisplaceX/U-V-W state the deterministic pipeline would hand off from),
-sets ONE candidate starting point for every phase's isotropic Size and
-uniaxial Mustrain (equatorial + axial), refines once, and reports the
+Loads a checkpoint .gpx produced by gsas2_auto_refine.py — normally
+checkpoint_0N_pre_profile_microstrain_size.gpx for --target
+microstrain_size (the default), so the swarm starts from the same
+already-converged Background/Scale/Cell/DisplaceX/U-V-W state the
+deterministic pipeline would hand off from; or checkpoint_03_pre_
+unit_cell.gpx for --target cell, matching a real scientist's own manual
+practice (nudge the cell until peaks look close, then let GSAS-II's local
+refinement do the rest) rather than trusting the CIF's one starting cell.
+Sets ONE candidate starting point (every phase's isotropic Size and
+uniaxial Mustrain, or every phase's independent cell parameters — see
+gsas2_swarm_logic.cell_free_params), refines once, and reports the
 result. The checkpoint file itself is never written to — this script
 saves its own working copy in --outdir, so many workers can safely
 evaluate different particles against the same checkpoint in parallel
@@ -25,7 +30,8 @@ output location).
 
 Prints exactly one JSON line to stdout:
     {"rwp": float|null, "sane": bool, "error": str|null,
-     "final": {"<phase index>": {"size":.., "mustrain_eq":.., "mustrain_ax":..}, ...} | null}
+     "final": {"<phase index>": {"size":.., "mustrain_eq":.., "mustrain_ax":..}, ...}
+               | {"<phase index>": {"length_a":.., "angle_alpha":.., ...}, ...} | null}
 
 `sane` reuses gsas2_auto_refine.py's own bounds checks (Rwp trend, cell
 drift, profile-parameter sanity) — the same standard every stage of the
@@ -59,28 +65,40 @@ from gsas2_auto_refine import (  # noqa: E402
     Bounds,
     _SOLVER_FAILURE_RE,
     _Tee,
+    angle_drift_ok,
     cell_drift_ok,
     import_gsasiiscriptable,
     profile_params_sane,
     rwp_improved_or_stable,
 )
-from gsas2_swarm_logic import HIGH_ANGLE_CUTOFF_PARAM, LOW_ANGLE_CUTOFF_PARAM  # noqa: E402
+from gsas2_swarm_logic import (  # noqa: E402
+    HIGH_ANGLE_CUTOFF_PARAM,
+    LOW_ANGLE_CUTOFF_PARAM,
+    reconstruct_cell,
+)
 
 
 def parse_args(argv=None):
     p = argparse.ArgumentParser(
-        description="Evaluate one Size/Mustrain starting point against a checkpoint .gpx "
-                    "and report the Rwp GSAS-II's own refinement converges to.",
+        description="Evaluate one Size/Mustrain or unit-cell starting point against a "
+                    "checkpoint .gpx and report the Rwp GSAS-II's own refinement converges to.",
     )
     p.add_argument("--checkpoint", required=True, type=Path,
-                    help="A checkpoint_0N_pre_profile_microstrain_size.gpx from a real "
-                         "gsas2_auto_refine.py run. Read-only — never modified.")
+                    help="A checkpoint_0N_pre_profile_microstrain_size.gpx (--target "
+                         "microstrain_size, the default) or checkpoint_03_pre_unit_cell.gpx "
+                         "(--target cell) from a real gsas2_auto_refine.py run. Read-only — "
+                         "never modified.")
     p.add_argument("--gsasii-path", required=True, type=Path)
     p.add_argument("--outdir", required=True, type=Path,
                     help="Unique scratch directory for this one evaluation's working .gpx "
                          "— must not be shared with any other concurrently-running worker.")
+    p.add_argument("--target", choices=("microstrain_size", "cell"), default="microstrain_size",
+                    help="Which parameter space --values describes (default "
+                         "microstrain_size). See gsas2_swarm_logic.py's module docstring for "
+                         "why these are two separate modes rather than one combined search.")
     p.add_argument("--values", required=True,
-                    help='JSON dict: {"<phase index>": {"size": .., "mustrain": ..}, ..., '
+                    help='--target microstrain_size (default): JSON dict '
+                         '{"<phase index>": {"size": .., "mustrain": ..}, ..., '
                          '"low_angle_cutoff": .., "high_angle_cutoff": ..} — one entry per '
                          'phase, plus optional whole-histogram "low_angle_cutoff"/'
                          '"high_angle_cutoff" (degrees of data to discard from the start/end '
@@ -88,7 +106,11 @@ def parse_args(argv=None):
                          '(one "mustrain" value) if that key is present, or uniaxial (two '
                          'values, "mustrain_eq"/"mustrain_ax") if those are present instead — '
                          'see gsas2_swarm_logic.build_param_specs\' mustrain_type for why '
-                         'isotropic is the default.')
+                         'isotropic is the default. --target cell: JSON dict {"<phase index>": '
+                         '{"length_a": .., ...}} — only the cell parameters gsas2_swarm_logic.'
+                         'cell_free_params() says are independent for that phase\'s crystal '
+                         'system need be present; any other cell parameter is derived from '
+                         'them (see gsas2_swarm_logic.reconstruct_cell).')
     return p.parse_args(argv)
 
 
@@ -205,28 +227,47 @@ def main(argv=None) -> int:
             hist.set_refinements({"Limits": [new_tmin, new_tmax]})
             limits_applied = [new_tmin, new_tmax]
 
-        for phase_idx_str, v in phase_values.items():
-            phase = gpx.phase(int(phase_idx_str))
-            hap = phase.data["Histograms"][hist.name]
-            hap["Size"][0] = "isotropic"
-            hap["Size"][1][0] = float(v["size"])
-            hap["Size"][2][0] = True
-            # "mustrain" (isotropic, one free value) vs "mustrain_eq"/
-            # "mustrain_ax" (uniaxial, two) — which key(s) are present
-            # tells us which gsas2_swarm_logic.build_param_specs()
-            # mustrain_type built this candidate. Shapes verified against
-            # a real project via phase.set_HAP_refinements(): isotropic
-            # sets only value[0]/refine[0]; uniaxial sets both [0] and [1].
-            if "mustrain" in v:
-                hap["Mustrain"][0] = "isotropic"
-                hap["Mustrain"][1][0] = float(v["mustrain"])
-                hap["Mustrain"][2][0] = True
-            else:
-                hap["Mustrain"][0] = "uniaxial"
-                hap["Mustrain"][1][0] = float(v["mustrain_eq"])
-                hap["Mustrain"][1][1] = float(v["mustrain_ax"])
-                hap["Mustrain"][2][0] = True
-                hap["Mustrain"][2][1] = True
+        if args.target == "cell":
+            # Reconstruct the full 6-value cell from just the independent
+            # parameters --values supplies (see gsas2_swarm_logic.
+            # cell_free_params/reconstruct_cell) and write it exactly the
+            # way GSAS-II's own CIF importer does (confirmed against the
+            # installed GSASIIscriptable.py source: General['Cell'][1:7] =
+            # cell, then General['Cell'][7] = recomputed volume) before
+            # turning on the "Cell" refinement flag — mirrors gsas2_auto_
+            # refine.py's own unit_cell stage (set_phase={"Cell": True}),
+            # just with a new starting point instead of the CIF's own.
+            for phase_idx_str, v in phase_values.items():
+                phase = gpx.phase(int(phase_idx_str))
+                sgdata = phase.data["General"]["SGData"]
+                full_cell = reconstruct_cell(v, sgdata, start_cells[int(phase_idx_str)])
+                phase.data["General"]["Cell"][1:7] = list(full_cell)
+                phase.data["General"]["Cell"][7] = G2sc.G2lat.calc_V(G2sc.G2lat.cell2A(full_cell))
+                phase.set_refinements({"Cell": True})
+        else:
+            for phase_idx_str, v in phase_values.items():
+                phase = gpx.phase(int(phase_idx_str))
+                hap = phase.data["Histograms"][hist.name]
+                hap["Size"][0] = "isotropic"
+                hap["Size"][1][0] = float(v["size"])
+                hap["Size"][2][0] = True
+                # "mustrain" (isotropic, one free value) vs "mustrain_eq"/
+                # "mustrain_ax" (uniaxial, two) — which key(s) are present
+                # tells us which gsas2_swarm_logic.build_param_specs()
+                # mustrain_type built this candidate. Shapes verified
+                # against a real project via phase.set_HAP_refinements():
+                # isotropic sets only value[0]/refine[0]; uniaxial sets
+                # both [0] and [1].
+                if "mustrain" in v:
+                    hap["Mustrain"][0] = "isotropic"
+                    hap["Mustrain"][1][0] = float(v["mustrain"])
+                    hap["Mustrain"][2][0] = True
+                else:
+                    hap["Mustrain"][0] = "uniaxial"
+                    hap["Mustrain"][1][0] = float(v["mustrain_eq"])
+                    hap["Mustrain"][1][1] = float(v["mustrain_ax"])
+                    hap["Mustrain"][2][0] = True
+                    hap["Mustrain"][2][1] = True
 
         # Re-point the project's save file to our OWN working copy before
         # refining, not the checkpoint — do_refinements() reads from and
@@ -253,8 +294,10 @@ def main(argv=None) -> int:
         if sane:
             for i in range(len(gpx.phases())):
                 if i in start_cells:
-                    sane = sane and cell_drift_ok(start_cells[i], _cell(gpx, i), bounds)
-        if sane:
+                    new_cell = _cell(gpx, i)
+                    sane = sane and cell_drift_ok(start_cells[i], new_cell, bounds)
+                    sane = sane and angle_drift_ok(start_cells[i], new_cell, bounds)
+        if sane and args.target == "microstrain_size":
             profile_values = []
             for phase_idx_str in phase_values:
                 phase = gpx.phase(int(phase_idx_str))
@@ -264,17 +307,24 @@ def main(argv=None) -> int:
             sane = sane and profile_params_sane(profile_values, bounds)
 
         final = {}
-        for phase_idx_str, v in phase_values.items():
-            phase = gpx.phase(int(phase_idx_str))
-            hap = phase.data["Histograms"][hist.name]
-            if "mustrain" in v:
-                final[phase_idx_str] = {"size": hap["Size"][1][0], "mustrain": hap["Mustrain"][1][0]}
-            else:
-                final[phase_idx_str] = {
-                    "size": hap["Size"][1][0],
-                    "mustrain_eq": hap["Mustrain"][1][0],
-                    "mustrain_ax": hap["Mustrain"][1][1],
-                }
+        if args.target == "cell":
+            for phase_idx_str in phase_values:
+                cell = _cell(gpx, int(phase_idx_str))
+                final[phase_idx_str] = dict(zip(
+                    ("length_a", "length_b", "length_c", "angle_alpha", "angle_beta", "angle_gamma"),
+                    cell))
+        else:
+            for phase_idx_str, v in phase_values.items():
+                phase = gpx.phase(int(phase_idx_str))
+                hap = phase.data["Histograms"][hist.name]
+                if "mustrain" in v:
+                    final[phase_idx_str] = {"size": hap["Size"][1][0], "mustrain": hap["Mustrain"][1][0]}
+                else:
+                    final[phase_idx_str] = {
+                        "size": hap["Size"][1][0],
+                        "mustrain_eq": hap["Mustrain"][1][0],
+                        "mustrain_ax": hap["Mustrain"][1][1],
+                    }
         if limits_applied is not None:
             final["limits_applied"] = limits_applied
 
